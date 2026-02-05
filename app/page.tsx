@@ -30,7 +30,7 @@ const voiceStyles = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-black pb-24">
-      <main className="mx-auto flex min-h-[850.5px] w-full max-w-[1512px] flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
+      <main className="mx-auto flex min-h-[850.5px] w-full max-w-378 flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
         <header className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 p-1 shadow-[0_10px_30px_rgba(56,66,218,0.35)]">
@@ -101,7 +101,7 @@ export default function Home() {
         </section>
       </main>
 
-      <section className="mx-auto mt-14 flex w-full max-w-[1100px] flex-col items-center px-6 text-center text-white sm:px-10">
+      <section className="mx-auto mt-14 flex w-full max-w-275 flex-col items-center px-6 text-center text-white sm:px-10">
         <p
           className="text-[22px] font-normal leading-[140%] text-white/80 sm:text-3xl"
           style={{ fontFamily: "var(--font-inter)" }}
@@ -127,7 +127,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto mt-16 w-full max-w-[1100px] px-6 text-white sm:px-10">
+      <section className="mx-auto mt-16 w-full max-w-275 px-6 text-white sm:px-10">
         <div className="max-w-xl">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#6b6ff9]">
             Use Case
@@ -141,9 +141,9 @@ export default function Home() {
           {useCases.map((useCase) => (
             <div
               key={useCase.title}
-              className={`relative overflow-hidden rounded-[20px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-5 shadow-[0_18px_40px_rgba(14,16,40,0.45)] ${useCase.featured
-                ? "sm:col-span-1 sm:row-span-1 sm:h-[200px]"
-                : "h-[200px]"
+              className={`relative overflow-hidden rounded-[20px] border border-white/10 bg-linear-to-br from-white/10 via-white/5 to-transparent p-5 shadow-[0_18px_40px_rgba(14,16,40,0.45)] ${useCase.featured
+                ? "sm:col-span-1 sm:row-span-1 sm:h-50"
+                : "h-50"
                 }`}
             >
               <div
@@ -247,7 +247,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto mt-16 grid w-full max-w-[1100px] gap-10 px-6 text-white sm:grid-cols-[1.1fr_2fr] sm:px-10">
+      <section className="mx-auto mt-16 grid w-full max-w-275 gap-10 px-6 text-white sm:grid-cols-[1.1fr_2fr] sm:px-10">
         <div>
           <h3 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
             Choose from the{" "}
