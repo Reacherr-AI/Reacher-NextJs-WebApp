@@ -1,65 +1,286 @@
 import Image from "next/image";
 
+const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
+const brandLogos = [
+  { name: "Doordash", src: "/images/brands/doordash-logo.svg" },
+  { name: "Amazon", src: "/images/brands/amazon-logo.png" },
+  { name: "Shopify", src: "/images/brands/shopify-logo.png" },
+];
+
+const useCases = [
+  { title: "Customer Support", icon: "support" },
+  { title: "Receptionist", icon: "mic" },
+  { title: "Dispatch Service", icon: "dispatch" },
+  { title: "Lead Qualification", icon: "leads", featured: true },
+];
+
+const voiceStyles = [
+  { name: "Eva", src: "/images/testimonials/testimonial-1.svg" },
+  { name: "James", src: "/images/testimonials/testimonial-2.svg" },
+  { name: "Adam", src: "/images/testimonials/testimonial-3.svg" },
+  { name: "Neptune", src: "/images/testimonials/testimonial-4.svg" },
+  { name: "Kate", src: "/images/testimonials/testimonial-5.svg" },
+  { name: "Emma", src: "/images/testimonials/testimonial-6.svg" },
+  { name: "Jeet", src: "/images/testimonials/testimonial-7.svg" },
+  { name: "Lily", src: "/images/testimonials/testimonial-8.svg" },
+  { name: "John", src: "/images/testimonials/testimonial-9.svg" },
+  { name: "Clara", src: "/images/testimonials/testimonial-10.svg" },
+];
+
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-screen bg-black pb-24">
+      <main className="mx-auto flex min-h-[850.5px] w-full max-w-[1512px] flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
+        <header className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 p-1 shadow-[0_10px_30px_rgba(56,66,218,0.35)]">
+              <Image
+                src="/icons/reacherr-logo.svg"
+                alt="Reacherr"
+                width={28}
+                height={28}
+                className="h-6 w-6"
+                priority
+              />
+            </div>
+            <span className="text-lg font-semibold tracking-tight text-white">
+              reacherr
+            </span>
+          </div>
+
+          <nav className="flex flex-1 flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2 py-2 text-xs font-medium text-white/70 shadow-[0_12px_40px_rgba(9,11,30,0.45)] backdrop-blur">
+              {navLinks.map((link) => (
+                <button
+                  key={link}
+                  className={`rounded-full px-4 py-2 transition ${link === "Home"
+                    ? "bg-white text-black"
+                    : "hover:bg-white/10"
+                    }`}
+                >
+                  {link}
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]">
+              Login
+            </button>
+            <button className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10">
+              Contact Sale
+            </button>
+          </div>
+        </header>
+
+        <section className="flex flex-1 flex-col items-center justify-center text-center text-white">
+          <div className="max-w-3xl">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+              AI voice agent platform
+            </p>
+            <h1 className="text-3xl font-semibold leading-tight text-white sm:text-5xl">
+              AI Voice Agents That Handle Calls For You
+            </h1>
+            <p className="mt-4 text-sm font-medium text-white/60 sm:text-base">
+              #1 AI Voice Agent Platform for Automating Calls
+            </p>
+          </div>
+
+          <button className="mt-10 inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(16,20,64,0.45)] backdrop-blur transition hover:bg-white/15">
+            Try Reacherr
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
+              <Image
+                src="/icons/spotify-bars.png"
+                alt="Audio"
+                width={16}
+                height={16}
+              />
+            </span>
+          </button>
+        </section>
+      </main>
+
+      <section className="mx-auto mt-14 flex w-full max-w-[1100px] flex-col items-center px-6 text-center text-white sm:px-10">
+        <p
+          className="text-[22px] font-normal leading-[140%] text-white/80 sm:text-3xl"
+          style={{ fontFamily: "var(--font-inter)" }}
+        >
+          Trusted by{" "}
+          <span className="font-bold text-[#6b6ff9]">10,000+</span>{" "}
+          customer and brands worldwide
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-10 opacity-70">
+          <span className="text-base font-semibold uppercase tracking-[0.4em] text-white/55">
+            Microsoft
+          </span>
+          {brandLogos.map((brand) => (
+            <div key={brand.name} className="relative h-8 w-28 sm:h-9 sm:w-32">
+              <Image
+                src={brand.src}
+                alt={brand.name}
+                fill
+                className="object-contain"
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto mt-16 w-full max-w-[1100px] px-6 text-white sm:px-10">
+        <div className="max-w-xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#6b6ff9]">
+            Use Case
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold leading-snug sm:text-3xl">
+            Reacherr AI turns voice interactions into automated workflows
+          </h2>
+        </div>
+
+        <div className="mt-8 grid gap-5 sm:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
+          {useCases.map((useCase) => (
+            <div
+              key={useCase.title}
+              className={`relative overflow-hidden rounded-[20px] border border-white/10 bg-gradient-to-br from-white/10 via-white/5 to-transparent p-5 shadow-[0_18px_40px_rgba(14,16,40,0.45)] ${useCase.featured
+                ? "sm:col-span-1 sm:row-span-1 sm:h-[200px]"
+                : "h-[200px]"
+                }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              <div
+                className="absolute inset-0 opacity-100"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(145deg, rgba(186,176,225,0.75) 0%, rgba(110,102,200,0.7) 48%, rgba(57,60,158,0.9) 100%), url('/images/background/reacher-gradient.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+              <div
+                className="absolute inset-0 opacity-20 mix-blend-screen"
+                style={{
+                  backgroundImage: "url('/images/background/reacher-gradient.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+              <div className="absolute inset-0 opacity-70">
+                <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#7c7bff]/40 blur-2xl" />
+                <div className="absolute bottom-0 left-0 h-20 w-24 rounded-full bg-[#ffffff]/10 blur-2xl" />
+              </div>
+
+              <div className="relative flex h-full flex-col justify-between">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
+                  {useCase.icon === "support" && (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <path d="M6 9a6 6 0 0 1 12 0v5a3 3 0 0 1-3 3h-3" />
+                      <rect x="4" y="10" width="4" height="6" rx="2" />
+                      <rect x="16" y="10" width="4" height="6" rx="2" />
+                    </svg>
+                  )}
+                  {useCase.icon === "mic" && (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <rect x="9" y="3" width="6" height="12" rx="3" />
+                      <path d="M5 11a7 7 0 0 0 14 0" />
+                      <path d="M12 18v3" />
+                    </svg>
+                  )}
+                  {useCase.icon === "dispatch" && (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <path d="M4 7h16v10H4z" />
+                      <path d="M8 7v10" />
+                      <path d="M16 7v10" />
+                    </svg>
+                  )}
+                  {useCase.icon === "leads" && (
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-6 w-6 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                    >
+                      <circle cx="9" cy="9" r="3" />
+                      <circle cx="17" cy="7" r="2" />
+                      <path d="M4 19a5 5 0 0 1 10 0" />
+                      <path d="M14 17a4 4 0 0 1 6 0" />
+                    </svg>
+                  )}
+                </div>
+
+                {useCase.featured ? (
+                  <div>
+                    <h3 className="text-lg font-semibold">Lead Qualification</h3>
+                    <p className="mt-2 text-xs leading-relaxed text-white/70">
+                      Identify potential clients and screen prospect. Automate
+                      outreach for better conversion.
+                    </p>
+                    <button className="mt-4 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/80">
+                      Learn More
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs font-semibold text-white/80">
+                    {useCase.title}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto mt-16 grid w-full max-w-[1100px] gap-10 px-6 text-white sm:grid-cols-[1.1fr_2fr] sm:px-10">
+        <div>
+          <h3 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+            Choose from the{" "}
+            <span className="text-[#6b6ff9]">voice</span> styles
+          </h3>
+          <p className="mt-4 text-sm text-white/55 sm:text-base">
+            Select from a diverse range of AI voice presenters, from warm
+            narrators to energetic.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="flex flex-wrap items-center gap-5">
+          {voiceStyles.map((voice) => (
+            <div
+              key={voice.name}
+              className="flex items-center gap-4 rounded-full border border-white/15 bg-black/40 pl-2 px-5 py-1 text-sm text-white/80 shadow-[0_12px_30px_rgba(10,12,30,0.35)]"
+            >
+              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-white/10 ring-2 ring-white/5">
+                <Image
+                  src={voice.src}
+                  alt={voice.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">{voice.name}</p>
+                <p className="text-[11px] text-white/50">Soft &amp; Natural</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </main>
+      </section>
     </div>
   );
 }

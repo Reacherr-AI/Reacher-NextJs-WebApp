@@ -1,0 +1,109 @@
+import Link from "next/link";
+import Image from "next/image";
+
+const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-black px-6 pb-16 pt-10 text-white">
+      <div className="mx-auto flex min-h-[85vh] w-full max-w-[1200px] flex-col rounded-3xl border border-white/10 bg-[radial-gradient(1200px_circle_at_75%_10%,rgba(56,66,218,0.25)_0%,rgba(0,0,0,0.9)_50%,rgba(0,0,0,1)_100%)] p-8 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:p-12">
+        <header className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 p-1 shadow-[0_10px_30px_rgba(56,66,218,0.35)]">
+              <Image
+                src="/icons/reacherr-logo.svg"
+                alt="Reacherr"
+                width={28}
+                height={28}
+                className="h-6 w-6"
+                priority
+              />
+            </div>
+            <span className="text-lg font-semibold tracking-tight text-white">
+              reacherr
+            </span>
+          </div>
+
+          <nav className="flex flex-1 flex-wrap items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2 py-2 text-xs font-medium text-white/70 shadow-[0_12px_40px_rgba(9,11,30,0.45)] backdrop-blur">
+              {navLinks.map((link) => (
+                <span key={link} className="rounded-full px-4 py-2">
+                  {link}
+                </span>
+              ))}
+            </div>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]">
+              Login
+            </span>
+            <Link
+              href="/sign-up"
+              className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10"
+            >
+              Contact Sale
+            </Link>
+          </div>
+        </header>
+
+        <div className="mt-16 grid gap-10 sm:grid-cols-[1.1fr_1fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+              Sign In
+            </p>
+            <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+              Welcome back to Reacherr
+            </h1>
+            <p className="mt-4 text-sm text-white/60 sm:text-base">
+              Sign in to manage your AI voice agents, call flows, and
+              performance.
+            </p>
+          </div>
+
+          <form className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(10,12,35,0.55)] backdrop-blur">
+            <label className="text-xs font-semibold text-white/70">Email</label>
+            <input
+              type="email"
+              placeholder="you@reacherr.ai"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+            />
+
+            <label className="mt-5 block text-xs font-semibold text-white/70">
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+            />
+
+            <div className="mt-4 flex items-center justify-between text-xs text-white/60">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" className="h-4 w-4 rounded" />
+                Remember me
+              </label>
+              <button type="button" className="text-white/70 hover:text-white">
+                Forgot password?
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              className="mt-6 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-black"
+            >
+              Sign In
+            </button>
+
+            <p className="mt-4 text-center text-xs text-white/60">
+              Don’t have an account?{" "}
+              <Link href="/sign-up" className="text-white/90">
+                Sign up
+              </Link>
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
