@@ -1,9 +1,71 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { AuthResponse } from "@/lib/auth/auth-types";
 
 const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = (await res.json()) as AuthResponse;
+
+      if (!res.ok) {
+        setError((data as { message?: string }).message ?? "Login failed");
+        return;
+      }
+
+      if ("accessToken" in data) {
+        router.replace("/");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        challengeToken: data.challengeToken,
+        challengeType: data.challengeType,
+      });
+
+      if (data.challengeType === "EMAIL") {
+        router.push(`/verify-email?${params.toString()}`);
+      } else if (data.challengeType === "ADD_PHONE") {
+        router.push(`/add-phone?${params.toString()}`);
+      } else {
+        router.push(`/verify-phone?${params.toString()}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    setIsGoogleLoading(true);
+    window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
+  };
+
   return (
     <div className="min-h-screen bg-black px-6 pb-16 pt-10 text-white">
       <div className="mx-auto flex min-h-[85vh] w-full max-w-[1200px] flex-col rounded-3xl border border-white/10 bg-[radial-gradient(1200px_circle_at_75%_10%,rgba(56,66,218,0.25)_0%,rgba(0,0,0,0.9)_50%,rgba(0,0,0,1)_100%)] p-8 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:p-12">
@@ -61,11 +123,18 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(10,12,35,0.55)] backdrop-blur">
-            <label className="text-xs font-semibold text-white/70">Email</label>
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(10,12,35,0.55)] backdrop-blur"
+          >
+            <label className="text-xs font-semibold text-white/70">
+              Email (used as username)
+            </label>
             <input
               type="email"
               placeholder="you@reacherr.ai"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
             />
 
@@ -75,6 +144,8 @@ export default function LoginPage() {
             <input
               type="password"
               placeholder="••••••••"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
             />
 
@@ -88,11 +159,27 @@ export default function LoginPage() {
               </button>
             </div>
 
+            {error ? (
+              <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                {error}
+              </p>
+            ) : null}
+
             <button
               type="submit"
-              className="mt-6 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-black"
+              disabled={isLoading}
+              className="mt-6 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Sign In
+              {isLoading ? "Signing in..." : "Sign In"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleLoading}
+              className="mt-3 w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {isGoogleLoading ? "Redirecting..." : "Continue with Google"}
             </button>
 
             <p className="mt-4 text-center text-xs text-white/60">
