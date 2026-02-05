@@ -2,6 +2,8 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import * as RPNInput from 'react-phone-number-input';
+import { PhoneInput } from '@/components/ui/phone-input';
 import type { AuthResponse } from '@/lib/auth/auth-types';
 
 export default function AddPhonePage() {
@@ -9,7 +11,7 @@ export default function AddPhonePage() {
   const searchParams = useSearchParams();
   const challengeToken = searchParams.get('challengeToken') ?? '';
 
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState<RPNInput.Value | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -24,7 +26,7 @@ export default function AddPhonePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           challengeToken,
-          phone,
+          phone: phone ?? '',
         }),
       });
 
@@ -43,7 +45,7 @@ export default function AddPhonePage() {
       const params = new URLSearchParams({
         challengeToken: data.challengeToken,
         challengeType: data.challengeType,
-        phone,
+        phone: phone ?? '',
       });
 
       router.push(`/verify-phone?${params.toString()}`);
@@ -64,12 +66,16 @@ export default function AddPhonePage() {
 
         <form onSubmit={handleSubmit} className="mt-6">
           <label className="text-xs font-semibold text-white/70">Phone</label>
-          <input
-            type="tel"
-            placeholder="+1 415 555 0123"
+          <PhoneInput
+            placeholder="98765 43210"
             value={phone}
-            onChange={(event) => setPhone(event.target.value)}
-            className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+            onChange={setPhone}
+            defaultCountry="IN"
+            countries={['IN']}
+            international={false}
+            countryCallingCodeEditable={false}
+            countrySelectProps={{ disabled: true }}
+            className="mt-2 w-full"
           />
 
           {error ? (
@@ -80,7 +86,7 @@ export default function AddPhonePage() {
 
           <button
             type="submit"
-            disabled={isLoading || !challengeToken}
+            disabled={isLoading || !challengeToken || !phone}
             className="mt-6 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isLoading ? 'Sending code...' : 'Send code'}
