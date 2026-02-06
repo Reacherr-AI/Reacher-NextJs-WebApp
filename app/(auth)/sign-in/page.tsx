@@ -173,12 +173,26 @@ export default function LoginPage() {
               {isLoading ? "Signing in..." : "Sign In"}
             </button>
 
+            <div className="mt-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40">
+              <span className="h-px flex-1 bg-white/10" />
+              <span>Or</span>
+              <span className="h-px flex-1 bg-white/10" />
+            </div>
+
             <button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading}
-              className="mt-3 w-full rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-70"
             >
+              <Image
+                src="/icons/brands/google-icon-logo.svg"
+                alt=""
+                width={18}
+                height={18}
+                className="h-[18px] w-[18px]"
+                aria-hidden
+              />
               {isGoogleLoading ? "Redirecting..." : "Continue with Google"}
             </button>
 

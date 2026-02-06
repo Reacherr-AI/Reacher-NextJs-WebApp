@@ -1,4 +1,4 @@
-import { getAccessToken } from './auth-cookies';
+import { getAccessToken } from './auth/auth-cookies';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
 

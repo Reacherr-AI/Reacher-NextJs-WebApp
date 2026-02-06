@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getRefreshToken, setAuthCookies } from '@/lib/auth/auth-cookies';
 import { isJwtResponse, type AuthResponse, type JwtResponse } from '@/lib/auth/auth-types';
-import { parseJsonResponse } from '@/lib/auth/route-helpers';
+import { parseJsonResponse } from '@/lib/route-helpers';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
 
