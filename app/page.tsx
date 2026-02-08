@@ -1,13 +1,20 @@
 import Image from "next/image";
 import {
+  ArrowLeftRight,
+  BarChart3,
   Facebook,
+  Globe,
   Instagram,
   MessageCircle,
+  PhoneCall,
+  PlugZap,
   Plus,
   Send,
+  Timer,
   Twitter,
 } from "lucide-react";
 import { Marquee } from "@/components/ui/marquee";
+import { FeaturesGrid } from "@/components/ui/features-grid";
 
 const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
 const brandLogos = [
@@ -47,9 +54,48 @@ const faqItems = [
   "Is there a limit on file size?",
 ];
 
+const featureItems = [
+  {
+    title: "Auto Dialer",
+    description:
+      "High-velocity outbound dialing with smart retries for maximum reach.",
+    Icon: PhoneCall,
+  },
+  {
+    title: "Web Calls",
+    description:
+      "Embed voice calling on your website so visitors can talk instantly.",
+    Icon: Globe,
+  },
+  {
+    title: "Lowest Latency",
+    description:
+      "Sub-second responses tuned for natural conversations at scale.",
+    Icon: Timer,
+  },
+  {
+    title: "Enhanced CRM Integrations",
+    description:
+      "Sync calls, leads, and outcomes to your CRM with clean automation.",
+    Icon: PlugZap,
+  },
+  {
+    title: "Seamless Call Transfer",
+    description:
+      "Hand off to human agents with context preserved, no awkward resets.",
+    Icon: ArrowLeftRight,
+  },
+  {
+    title: "Enterprise Call Analysis",
+    description:
+      "Dispositioning, transcripts, and insights to continuously improve.",
+    Icon: BarChart3,
+  },
+] as const;
+
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black pb-24">
+    <div className="min-h-screen bg-black">
       <main className="mx-auto flex min-h-[850.5px] w-full max-w-378 flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
         <header className="flex flex-wrap items-center justify-between gap-6">
           <div className="flex items-center gap-3">
@@ -311,6 +357,16 @@ export default function Home() {
         </div>
       </section>
 
+      <FeaturesGrid
+        className="mx-auto mt-20 max-w-275 px-6 text-white sm:px-10"
+        headline={
+          <>
+            We offer <span className="text-[#6b6ff9]">best</span> in class
+          </>
+        }
+        items={featureItems}
+      />
+
       <section className="mx-auto mt-20 w-full max-w-275 px-6 text-white sm:px-10">
         <div className="grid gap-10 lg:grid-cols-[1fr_1.4fr]">
           <div className="flex flex-col justify-between gap-8">
@@ -347,7 +403,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="mx-auto mt-20 w-full max-w-275 px-6 pb-10 text-white sm:px-10">
+      <footer className="relative mx-auto mt-20 w-full max-w-275 overflow-hidden px-6 pb-44 text-white sm:px-10 sm:pb-52">
         <div className="mb-12 mt-4 h-px w-40 bg-white/20" />
         <div className="grid gap-10 lg:grid-cols-[1fr_1.2fr_1fr]">
           <div className="flex flex-col gap-2 text-lg font-medium text-white/70">
@@ -418,6 +474,16 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex w-full justify-center">
+          <Image
+            src="/images/footer/reacher-text-footer.png"
+            alt="Reacherr"
+            width={1464}
+            height={220}
+            className="h-auto w-[1120px] max-w-[140%] select-none opacity-95"
+            priority={false}
+          />
+        </div>
       </footer>
     </div>
   );
