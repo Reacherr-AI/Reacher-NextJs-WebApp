@@ -7,6 +7,7 @@ import {
   Send,
   Twitter,
 } from "lucide-react";
+import { Marquee } from "@/components/ui/marquee";
 
 const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
 const brandLogos = [
@@ -129,12 +130,21 @@ export default function Home() {
           <span className="font-bold text-[#6b6ff9]">10,000+</span>{" "}
           customer and brands worldwide
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-10 opacity-70">
-          <span className="text-base font-semibold uppercase tracking-[0.4em] text-white/55">
+        <Marquee
+          className="mt-8 w-full max-w-4xl opacity-70"
+          duration={28}
+          gap="2.5rem"
+          pauseOnHover
+          fade
+        >
+          <span className="px-8 text-base font-semibold uppercase tracking-[0.4em] text-white/55">
             Microsoft
           </span>
           {brandLogos.map((brand) => (
-            <div key={brand.name} className="relative h-8 w-28 sm:h-9 sm:w-32">
+            <div
+              key={brand.name}
+              className="relative h-8 w-28 shrink-0 px-8 sm:h-9 sm:w-32"
+            >
               <Image
                 src={brand.src}
                 alt={brand.name}
@@ -143,7 +153,7 @@ export default function Home() {
               />
             </div>
           ))}
-        </div>
+        </Marquee>
       </section>
 
       <section className="mx-auto mt-16 w-full max-w-275 px-6 text-white sm:px-10">
