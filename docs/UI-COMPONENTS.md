@@ -85,3 +85,33 @@ import { SiteFooter } from "@/components/layout/site-footer";
 
 <SiteFooter />;
 ```
+
+## ProductHero
+
+File: `nextjs_reacherr_frontend/components/layout/product-hero.tsx`
+
+Reusable product hero section (title + value prop card + layered preview images). Server Component.
+
+```tsx
+import { ProductHero } from "@/components/layout/product-hero";
+
+<ProductHero
+  title="Call Transfer"
+  cardTitle={<>Smarter Call Transfers,<br />Happier Customers</>}
+  cardDescription={<>Seamlessly switch calls with AI-powered warm and cold transfers.</>}
+  primaryCta={{ label: "Try for Free", href: "/sign-up" }}
+  secondaryCta={{ label: "Contact Sale" }}
+  previewBack={{
+    src: "/images/preview/product/call-transfer-2.png",
+    alt: "Call transfer configuration preview",
+    width: 1200,
+    height: 800,
+  }}
+  previewFront={{
+    src: "/images/preview/product/call-transfer-1.png",
+    alt: "Call transfer modal preview",
+    width: 1200,
+    height: 800,
+  }}
+/>;
+```
