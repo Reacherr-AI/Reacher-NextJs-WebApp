@@ -3,6 +3,8 @@ import "server-only";
 import Image from "next/image";
 import Link from "next/link";
 
+import { getAccessToken } from "@/lib/auth/auth-cookies";
+
 type SiteNavbarLink = {
   label: string;
   href?: string;
@@ -21,10 +23,14 @@ const defaultLinks: SiteNavbarLink[] = [
   { label: "About Us" },
 ];
 
-export function SiteNavbar({
+export async function SiteNavbar({
   activeLabel,
   className,
 }: Props) {
+  const accessToken = await getAccessToken();
+  const showDashboard =
+    typeof accessToken === "string" && accessToken.trim().length > 0;
+
   return (
     <header
       className={
@@ -77,10 +83,10 @@ export function SiteNavbar({
 
       <div className="flex items-center gap-2">
         <Link
-          href="/sign-in"
+          href={showDashboard ? "/agents" : "/sign-in"}
           className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]"
         >
-          Login
+          {showDashboard ? "Dashboard" : "Login"}
         </Link>
         <button className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10">
           Contact Sale
