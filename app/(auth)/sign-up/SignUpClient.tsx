@@ -1,0 +1,178 @@
+'use client';
+
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { AuthResponse } from "@/lib/auth/auth-types";
+
+const BACKEND_URL =
+  process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8080";
+
+export default function SignUpClient() {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isEmailTaken, setIsEmailTaken] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setIsEmailTaken(false);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, username, password }),
+      });
+
+      const data = (await res.json()) as AuthResponse;
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          setIsEmailTaken(true);
+          setError("Email already in use. Try logging in.");
+        } else {
+          setError((data as { message?: string }).message ?? "Sign up failed");
+        }
+        return;
+      }
+
+      if ("accessToken" in data) {
+        router.replace("/");
+        return;
+      }
+
+      const params = new URLSearchParams({
+        challengeToken: data.challengeToken,
+        challengeType: data.challengeType,
+      });
+
+      if (data.challengeType === "EMAIL") {
+        router.push(`/verify-email?${params.toString()}`);
+      } else if (data.challengeType === "ADD_PHONE") {
+        router.push(`/add-phone?${params.toString()}`);
+      } else {
+        router.push(`/verify-phone?${params.toString()}`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign up failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = () => {
+    setIsGoogleLoading(true);
+    window.location.href = `${BACKEND_URL}/oauth2/authorization/google`;
+  };
+
+  return (
+    <div className="mt-16 grid gap-10 sm:grid-cols-[1.1fr_1fr]">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+          Sign Up
+        </p>
+        <h1 className="mt-3 text-3xl font-semibold leading-tight sm:text-4xl">
+          Create your Reacherr account
+        </h1>
+        <p className="mt-4 text-sm text-white/60 sm:text-base">
+          Start building AI voice agents that handle calls, qualify leads, and
+          automate workflows.
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_rgba(10,12,35,0.55)] backdrop-blur"
+      >
+        <label className="text-xs font-semibold text-white/70">Full name</label>
+        <input
+          type="text"
+          placeholder="Your name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+        />
+
+        <label className="mt-5 block text-xs font-semibold text-white/70">
+          Email (used as username)
+        </label>
+        <input
+          type="email"
+          placeholder="you@company.com"
+          value={username}
+          onChange={(event) => setUsername(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+        />
+
+        <label className="mt-5 block text-xs font-semibold text-white/70">
+          Password
+        </label>
+        <input
+          type="password"
+          placeholder="Create a password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#6b6ff9]"
+        />
+
+        {error ? (
+          <p className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+            {error}{" "}
+            {isEmailTaken ? (
+              <Link href="/sign-in" className="text-red-100 underline">
+                Sign in
+              </Link>
+            ) : null}
+          </p>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="mt-6 w-full rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isLoading ? "Creating account..." : "Create account"}
+        </button>
+
+        <div className="mt-4 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.25em] text-white/40">
+          <span className="h-px flex-1 bg-white/10" />
+          <span>Or</span>
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogleSignUp}
+          disabled={isGoogleLoading}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white/90 transition hover:border-white/40 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <Image
+            src="/icons/brands/google-icon-logo.svg"
+            alt=""
+            width={18}
+            height={18}
+            className="h-[18px] w-[18px]"
+            aria-hidden
+          />
+          {isGoogleLoading ? "Redirecting..." : "Continue with Google"}
+        </button>
+
+        <p className="mt-4 text-center text-xs text-white/60">
+          Already have an account?{" "}
+          <Link href="/sign-in" className="text-white/90">
+            Sign in
+          </Link>
+        </p>
+      </form>
+    </div>
+  );
+}
+

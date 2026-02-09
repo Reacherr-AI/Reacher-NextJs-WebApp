@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -15,8 +16,8 @@ import {
 } from "lucide-react";
 import { Marquee } from "@/components/ui/marquee";
 import { FeaturesGrid } from "@/components/ui/features-grid";
+import { SiteNavbar } from "@/components/layout/site-navbar";
 
-const navLinks = ["Home", "Product", "Solution", "Pricing", "About Us"];
 const brandLogos = [
   { name: "Doordash", src: "/images/brands/doordash-logo.svg" },
   { name: "Amazon", src: "/images/brands/amazon-logo.png" },
@@ -97,48 +98,22 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black">
       <main className="mx-auto flex min-h-[850.5px] w-full max-w-378 flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
-        <header className="flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 p-1 shadow-[0_10px_30px_rgba(56,66,218,0.35)]">
-              <Image
-                src="/icons/reacherr-logo.svg"
-                alt="Reacherr"
-                width={28}
-                height={28}
-                className="h-6 w-6"
-                priority
-              />
-            </div>
-            <span className="text-lg font-semibold tracking-tight text-white">
-              reacherr
-            </span>
-          </div>
-
-          <nav className="flex flex-1 flex-wrap items-center justify-center gap-3">
-            <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2 py-2 text-xs font-medium text-white/70 shadow-[0_12px_40px_rgba(9,11,30,0.45)] backdrop-blur">
-              {navLinks.map((link) => (
-                <button
-                  key={link}
-                  className={`rounded-full px-4 py-2 transition ${link === "Home"
-                    ? "bg-white text-black"
-                    : "hover:bg-white/10"
-                    }`}
-                >
-                  {link}
-                </button>
-              ))}
-            </div>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <button className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]">
-              Login
-            </button>
-            <button className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10">
-              Contact Sale
-            </button>
-          </div>
-        </header>
+        <SiteNavbar
+          activeLabel="Home"
+          rightSlot={
+            <>
+              <Link
+                href="/sign-in"
+                className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]"
+              >
+                Login
+              </Link>
+              <button className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10">
+                Contact Sale
+              </button>
+            </>
+          }
+        />
 
         <section className="flex flex-1 flex-col items-center justify-center text-center text-white">
           <div className="max-w-3xl">
