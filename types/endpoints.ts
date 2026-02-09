@@ -2,6 +2,8 @@ import { AuthResult, LoginRequest, RefreshTokenRequest, SignUpRequest } from './
 import { CreateWebCallRequest, CreateWebCallResponse } from './call';
 import { ConversationFlowRequest, ConversationFlowResponse } from './conversation-flow';
 import { AgentConversationConfigResponse } from './conversation-config';
+import { BedrockJobMonitorWebhookRequestBody, BedrockJobMonitorWebhookResponse } from './bedrock';
+import { CreateKnowledgeBaseResponseBody } from './knowledge-base';
 import { LivekitWebhookRequestBody, LivekitWebhookResponse } from './livekit';
 import {
   AddPhoneRequest,
@@ -23,6 +25,12 @@ export interface LivekitWebhookRequest {
 }
 
 export type LivekitWebhookResponseBody = LivekitWebhookResponse;
+
+export interface BedrockJobMonitorWebhookRequest {
+  body: BedrockJobMonitorWebhookRequestBody;
+}
+
+export type BedrockJobMonitorWebhookResponseBody = BedrockJobMonitorWebhookResponse;
 
 export interface VerifyPhoneRequest {
   body: OtpVerificationRequest;
@@ -211,3 +219,10 @@ export interface DeleteReacherrLlmRequest {
 }
 
 export type DeleteReacherrLlmResponse = void;
+
+export interface CreateKnowledgeBaseRequest {
+  // OpenAPI: multipart/form-data. Use `CreateKnowledgeBaseFields` as the source shape.
+  body: FormData;
+}
+
+export type CreateKnowledgeBaseResponse = CreateKnowledgeBaseResponseBody;
