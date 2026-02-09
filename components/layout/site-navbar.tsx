@@ -2,32 +2,27 @@ import "server-only";
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
 
-export type SiteNavbarLink = {
+type SiteNavbarLink = {
   label: string;
   href?: string;
 };
 
 type Props = {
   activeLabel?: string;
-  links?: SiteNavbarLink[];
-  rightSlot?: ReactNode;
   className?: string;
 };
 
 const defaultLinks: SiteNavbarLink[] = [
   { label: "Home", href: "/" },
-  { label: "Product" },
-  { label: "Solution" },
+  { label: "Product", href: "/product" },
+  { label: "Solution", href: "/solution" },
   { label: "Pricing" },
   { label: "About Us" },
 ];
 
 export function SiteNavbar({
   activeLabel,
-  links = defaultLinks,
-  rightSlot,
   className,
 }: Props) {
   return (
@@ -54,7 +49,7 @@ export function SiteNavbar({
 
       <nav className="flex flex-1 flex-wrap items-center justify-center gap-3">
         <div className="flex flex-wrap items-center gap-2 rounded-full border border-white/10 bg-white/10 px-2 py-2 text-xs font-medium text-white/70 shadow-[0_12px_40px_rgba(9,11,30,0.45)] backdrop-blur">
-          {links.map((link) => {
+          {defaultLinks.map((link) => {
             const isActive = activeLabel ? link.label === activeLabel : false;
             const classNames = `rounded-full px-4 py-2 transition ${
               isActive ? "bg-white text-black" : "hover:bg-white/10"
@@ -80,7 +75,17 @@ export function SiteNavbar({
         </div>
       </nav>
 
-      <div className="flex items-center gap-2">{rightSlot}</div>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/sign-in"
+          className="rounded-full bg-white px-4 py-2 text-xs font-semibold text-black shadow-[0_10px_24px_rgba(255,255,255,0.2)]"
+        >
+          Login
+        </Link>
+        <button className="rounded-full bg-black/80 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/10">
+          Contact Sale
+        </button>
+      </div>
     </header>
   );
 }

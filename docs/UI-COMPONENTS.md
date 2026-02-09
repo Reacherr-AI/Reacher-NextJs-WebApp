@@ -56,10 +56,7 @@ Server Component navbar used by marketing/auth wrappers.
 ```tsx
 import { SiteNavbar } from "@/components/layout/site-navbar";
 
-<SiteNavbar
-  activeLabel="Home"
-  rightSlot={<a href="/sign-in">Login</a>}
-/>;
+<SiteNavbar activeLabel="Home" />;
 ```
 
 ## HaveQuestionsSection
