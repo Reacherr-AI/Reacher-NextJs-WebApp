@@ -1,8 +1,33 @@
 import { apiFetch } from '@/lib/api';
-import type { AgentDashBoardDto, ResponseEngineRef } from '@/types';
+import type { AgentDashBoardDto, AgentTemplateType, ResponseEngineRef, TemplateDto } from '@/types';
+import { CreateAgentModal } from './create-agent-modal';
 
 const PAGE_SIZE = 50;
 const MAX_PAGES = 20;
+
+// ------------------------------------------------------------------
+// ---------------------- GET TEMPLATES -----------------------------
+// ------------------------------------------------------------------
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isTemplateType = (value: unknown): value is AgentTemplateType =>
+  value === 'single-prompt' || value === 'conversational-flow' || value === 'custom';
+
+const isTemplateDto = (value: unknown): value is TemplateDto => {
+  if (!isRecord(value)) return false;
+  if (typeof value.id !== 'string' || value.id.trim().length === 0) return false;
+  if (typeof value.name !== 'string' || value.name.trim().length === 0) return false;
+  if (typeof value.description !== 'string') return false;
+  if (value.agentType !== undefined && !isTemplateType(value.agentType)) return false;
+  return true;
+};
+
+const parseTemplateList = (value: unknown): TemplateDto[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isTemplateDto);
+};
 
 const formatTimestamp = (value?: number) => {
   if (!value && value !== 0) return '—';
@@ -22,6 +47,27 @@ const formatAgentType = (value?: string) => {
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
 };
+
+const getTemplates = async () => {
+  const res = await apiFetch('/api/v1/templates', { method: 'GET' });
+
+  if (!res.ok) {
+    const message = await res.text();
+    return {
+      templates: [] as TemplateDto[],
+      error: message || 'Unable to load templates.',
+    };
+  }
+
+  const data: unknown = await res.json().catch(() => null);
+  return { templates: parseTemplateList(data), error: null as string | null };
+};
+
+
+// ------------------------------------------------------------------
+// ---------------------- GET AGENTS --------------------------------
+// ------------------------------------------------------------------
+
 
 const getAgents = async () => {
   const agents: AgentDashBoardDto[] = [];
@@ -51,6 +97,7 @@ const getAgents = async () => {
   return { agents, error: null as string | null };
 };
 
+
 const getConversationFlowId = (ref?: ResponseEngineRef) => {
   if (ref && 'conversationFlowId' in ref) {
     return ref.conversationFlowId ?? '—';
@@ -65,8 +112,15 @@ const getLlmId = (ref?: ResponseEngineRef) => {
   return '—';
 };
 
+
+// ------------------------------------------------------------------
+// ---------------------- RENDER PAGE -------------------------------
+// ------------------------------------------------------------------
+
+
 export default async function AgentsPage() {
-  const { agents, error } = await getAgents();
+  const [{ agents, error: agentsError }, { templates, error: templatesError }] =
+    await Promise.all([getAgents(), getTemplates()]);
 
   return (
     <div className="min-h-screen bg-black pb-16 text-white">
@@ -91,34 +145,38 @@ export default async function AgentsPage() {
             </div>
           </div>
 
-          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_rgba(10,12,35,0.55)] backdrop-blur">
-            <p className="text-xs uppercase tracking-[0.25em] text-white/45">
-              Account Snapshot
-            </p>
-            <div className="mt-4 grid gap-3 text-sm text-white/70">
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                <span>Active Agents</span>
-                <span className="text-base font-semibold text-white">
-                  {agents.length}
-                </span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                <span>Latest Update</span>
-                <span className="text-sm text-white/60">
-                  {agents[0] ? formatTimestamp(agents[0].lastUpdatedAt) : '—'}
-                </span>
+          <div className="w-full max-w-sm">
+            <CreateAgentModal initialTemplates={templates} initialTemplatesError={templatesError} />
+
+            <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_rgba(10,12,35,0.55)] backdrop-blur">
+              <p className="text-xs uppercase tracking-[0.25em] text-white/45">
+                Account Snapshot
+              </p>
+              <div className="mt-4 grid gap-3 text-sm text-white/70">
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                  <span>Active Agents</span>
+                  <span className="text-base font-semibold text-white">
+                    {agents.length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                  <span>Latest Update</span>
+                  <span className="text-sm text-white/60">
+                    {agents[0] ? formatTimestamp(agents[0].lastUpdatedAt) : '—'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        {error ? (
+        {agentsError ? (
           <div className="mt-10 rounded-2xl border border-red-500/30 bg-red-500/10 px-6 py-5 text-sm text-red-200">
-            {error}
+            {agentsError}
           </div>
         ) : null}
 
-        {agents.length === 0 && !error ? (
+        {agents.length === 0 && !agentsError ? (
           <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 px-6 py-12 text-center shadow-[0_24px_80px_rgba(10,12,35,0.55)]">
             <p className="text-base font-semibold">No agents found yet.</p>
             <p className="mt-2 text-sm text-white/60">
