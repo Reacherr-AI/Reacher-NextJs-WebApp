@@ -9,9 +9,11 @@ import {
 } from "lucide-react";
 import { Marquee } from "@/components/ui/marquee";
 import { FeaturesGrid } from "@/components/ui/features-grid";
+import { FeatureCard } from "@/components/layout/feature-card";
 import { SiteNavbar } from "@/components/layout/site-navbar";
 import { HaveQuestionsSection } from "@/components/layout/have-questions";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { cn } from "@/lib/utils";
 
 const brandLogos = [
   { name: "Doordash", src: "/images/brands/doordash-logo.svg" },
@@ -19,11 +21,98 @@ const brandLogos = [
   { name: "Shopify", src: "/images/brands/shopify-logo.png" },
 ];
 
-const useCases = [
+type UseCaseIconName = "support" | "mic" | "dispatch" | "leads";
+type UseCase = {
+  title: string;
+  icon: UseCaseIconName;
+  featured?: boolean;
+  description?: string;
+  ctaLabel?: string;
+};
+
+function UseCaseIcon({
+  icon,
+  className,
+}: {
+  icon: UseCaseIconName;
+  className?: string;
+}) {
+  if (icon === "support") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={cn("h-6 w-6 text-white", className)}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
+        <path d="M6 9a6 6 0 0 1 12 0v5a3 3 0 0 1-3 3h-3" />
+        <rect x="4" y="10" width="4" height="6" rx="2" />
+        <rect x="16" y="10" width="4" height="6" rx="2" />
+      </svg>
+    );
+  }
+
+  if (icon === "mic") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={cn("h-6 w-6 text-white", className)}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
+        <rect x="9" y="3" width="6" height="12" rx="3" />
+        <path d="M5 11a7 7 0 0 0 14 0" />
+        <path d="M12 18v3" />
+      </svg>
+    );
+  }
+
+  if (icon === "dispatch") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={cn("h-6 w-6 text-white", className)}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      >
+        <path d="M4 7h16v10H4z" />
+        <path d="M8 7v10" />
+        <path d="M16 7v10" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={cn("h-6 w-6 text-white", className)}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+    >
+      <circle cx="9" cy="9" r="3" />
+      <circle cx="17" cy="7" r="2" />
+      <path d="M4 19a5 5 0 0 1 10 0" />
+      <path d="M14 17a4 4 0 0 1 6 0" />
+    </svg>
+  );
+}
+
+const useCases: UseCase[] = [
   { title: "Customer Support", icon: "support" },
   { title: "Receptionist", icon: "mic" },
   { title: "Dispatch Service", icon: "dispatch" },
-  { title: "Lead Qualification", icon: "leads", featured: true },
+  {
+    title: "Lead Qualification",
+    icon: "leads",
+    featured: true,
+    description:
+      "Identify potential clients and screen prospect. Automate outreach for better conversion.",
+    ctaLabel: "Learn More",
+  },
 ];
 
 const voiceStyles = [
@@ -169,110 +258,25 @@ export default function Home() {
 
         <div className="mt-8 grid gap-5 sm:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
           {useCases.map((useCase) => (
-            <div
+            <FeatureCard
               key={useCase.title}
-              className={`relative overflow-hidden rounded-[20px] border border-white/10 bg-linear-to-br from-white/10 via-white/5 to-transparent p-5 shadow-[0_18px_40px_rgba(14,16,40,0.45)] ${useCase.featured
-                ? "sm:col-span-1 sm:row-span-1 sm:h-50"
-                : "h-50"
-                }`}
-            >
-              <div
-                className="absolute inset-0 opacity-100"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(145deg, rgba(186,176,225,0.75) 0%, rgba(110,102,200,0.7) 48%, rgba(57,60,158,0.9) 100%), url('/images/background/reacher-gradient.jpg')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div
-                className="absolute inset-0 opacity-20 mix-blend-screen"
-                style={{
-                  backgroundImage: "url('/images/background/reacher-gradient.jpg')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
-              />
-              <div className="absolute inset-0 opacity-70">
-                <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#7c7bff]/40 blur-2xl" />
-                <div className="absolute bottom-0 left-0 h-20 w-24 rounded-full bg-[#ffffff]/10 blur-2xl" />
-              </div>
-
-              <div className="relative flex h-full flex-col justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/10">
-                  {useCase.icon === "support" && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <path d="M6 9a6 6 0 0 1 12 0v5a3 3 0 0 1-3 3h-3" />
-                      <rect x="4" y="10" width="4" height="6" rx="2" />
-                      <rect x="16" y="10" width="4" height="6" rx="2" />
-                    </svg>
-                  )}
-                  {useCase.icon === "mic" && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <rect x="9" y="3" width="6" height="12" rx="3" />
-                      <path d="M5 11a7 7 0 0 0 14 0" />
-                      <path d="M12 18v3" />
-                    </svg>
-                  )}
-                  {useCase.icon === "dispatch" && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <path d="M4 7h16v10H4z" />
-                      <path d="M8 7v10" />
-                      <path d="M16 7v10" />
-                    </svg>
-                  )}
-                  {useCase.icon === "leads" && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-6 w-6 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                    >
-                      <circle cx="9" cy="9" r="3" />
-                      <circle cx="17" cy="7" r="2" />
-                      <path d="M4 19a5 5 0 0 1 10 0" />
-                      <path d="M14 17a4 4 0 0 1 6 0" />
-                    </svg>
-                  )}
-                </div>
-
-                {useCase.featured ? (
-                  <div>
-                    <h3 className="text-lg font-semibold">Lead Qualification</h3>
-                    <p className="mt-2 text-xs leading-relaxed text-white/70">
-                      Identify potential clients and screen prospect. Automate
-                      outreach for better conversion.
-                    </p>
-                    <button className="mt-4 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/80">
-                      Learn More
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-xs font-semibold text-white/80">
-                    {useCase.title}
-                  </p>
-                )}
-              </div>
-            </div>
+              title={useCase.title}
+              featured={useCase.featured}
+              icon={
+                <UseCaseIcon
+                  icon={useCase.icon}
+                  className={useCase.featured ? "h-7 w-7" : undefined}
+                />
+              }
+              description={useCase.description}
+              action={
+                useCase.ctaLabel ? (
+                  <button className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/80">
+                    {useCase.ctaLabel}
+                  </button>
+                ) : null
+              }
+            />
           ))}
         </div>
       </section>
