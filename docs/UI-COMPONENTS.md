@@ -112,3 +112,41 @@ import { ProductHero } from "@/components/layout/product-hero";
   }}
 />;
 ```
+
+## Design Trick: Gradient + Texture Layering
+
+Used to keep card backgrounds consistent across pages (for example the Use Case cards on `/` and the Enterprise card on `/pricing`).
+
+Pattern:
+1. Base panel (`bg-linear-to-br ...`) for subtle depth.
+2. Full-bleed gradient + texture image layer (`opacity-100`).
+3. Extra texture layer with `mix-blend-screen` for grain.
+4. A couple blurred blobs for highlights.
+
+```tsx
+<div className="relative overflow-hidden rounded-[22px] border border-white/10 bg-linear-to-br from-white/10 via-white/5 to-transparent p-8">
+  <div
+    className="absolute inset-0 opacity-100"
+    style={{
+      backgroundImage:
+        "linear-gradient(145deg, rgba(186,176,225,0.75) 0%, rgba(110,102,200,0.7) 48%, rgba(57,60,158,0.9) 100%), url('/images/background/reacher-gradient.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  />
+  <div
+    className="absolute inset-0 opacity-20 mix-blend-screen"
+    style={{
+      backgroundImage: "url('/images/background/reacher-gradient.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  />
+  <div className="absolute inset-0 opacity-70">
+    <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#7c7bff]/40 blur-2xl" />
+    <div className="absolute bottom-0 left-0 h-20 w-24 rounded-full bg-[#ffffff]/10 blur-2xl" />
+  </div>
+
+  <div className="relative">{/* content */}</div>
+</div>
+```

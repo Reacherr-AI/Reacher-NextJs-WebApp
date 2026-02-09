@@ -17,7 +17,7 @@ const defaultLinks: SiteNavbarLink[] = [
   { label: "Home", href: "/" },
   { label: "Product", href: "/product" },
   { label: "Solution", href: "/solution" },
-  { label: "Pricing" },
+  { label: "Pricing", href: "/pricing" },
   { label: "About Us" },
 ];
 
