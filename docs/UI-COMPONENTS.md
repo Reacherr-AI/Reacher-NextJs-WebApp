@@ -1,6 +1,7 @@
 # UI Components (Reference)
 
 Reusable UI primitives live in `nextjs_reacherr_frontend/components/ui/`.
+Reusable layout-level components live in `nextjs_reacherr_frontend/components/layout/`.
 
 ## Marquee
 
@@ -45,3 +46,42 @@ import { FeaturesGrid } from "@/components/ui/features-grid";
 ## Add New Reusable Components
 
 If we create a new component intended for reuse across pages (or blog posts), add a short entry here (file path + 1-2 lines + tiny snippet if needed).
+
+## SiteNavbar
+
+File: `nextjs_reacherr_frontend/components/layout/site-navbar.tsx`
+
+Server Component navbar used by marketing/auth wrappers.
+
+```tsx
+import { SiteNavbar } from "@/components/layout/site-navbar";
+
+<SiteNavbar
+  activeLabel="Home"
+  rightSlot={<a href="/sign-in">Login</a>}
+/>;
+```
+
+## HaveQuestionsSection
+
+File: `nextjs_reacherr_frontend/components/layout/have-questions.tsx`
+
+FAQ list + “Have questions?” CTA section (Server Component).
+
+```tsx
+import { HaveQuestionsSection } from "@/components/layout/have-questions";
+
+<HaveQuestionsSection faqItems={["How much time am I getting?"]} />;
+```
+
+## SiteFooter
+
+File: `nextjs_reacherr_frontend/components/layout/site-footer.tsx`
+
+Marketing footer (Server Component).
+
+```tsx
+import { SiteFooter } from "@/components/layout/site-footer";
+
+<SiteFooter />;
+```
