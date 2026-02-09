@@ -124,7 +124,10 @@ export default async function AgentsPage() {
 
   return (
     <div className="min-h-screen bg-black pb-16 text-white">
-      <main className="mx-auto w-full max-w-378 rounded-b-[26px] bg-[radial-gradient(1200px_circle_at_75%_10%,rgba(248,248,248,0.08)_0%,rgba(56,66,218,0.35)_32%,rgba(12,14,55,0.75)_60%,rgba(0,0,0,1)_100%)] px-6 pb-12 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
+      <div
+        role="main"
+        className="mx-auto w-full max-w-378 rounded-b-[26px] bg-[radial-gradient(1200px_circle_at_75%_10%,rgba(248,248,248,0.08)_0%,rgba(56,66,218,0.35)_32%,rgba(12,14,55,0.75)_60%,rgba(0,0,0,1)_100%)] px-6 pb-12 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10"
+      >
         <header className="flex flex-wrap items-start justify-between gap-8">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/50">
@@ -260,7 +263,7 @@ export default async function AgentsPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }
