@@ -114,7 +114,8 @@ export function AgentsInfiniteList({
       {agents.map((agent, index) => (
         <div
           key={agent.agentId ?? `${agent.agentName ?? 'agent'}-${index}`}
-          className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_rgba(8,10,35,0.5)] backdrop-blur"
+          className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_30px_80px_rgba(8,10,35,0.5)] backdrop-blur cursor-pointer"
+          onClick={() => { window.location.href = `/agents/${agent.agentId}` }}
         >
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
