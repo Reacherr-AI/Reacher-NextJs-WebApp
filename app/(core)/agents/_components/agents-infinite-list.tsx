@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { AgentDashBoardDto } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatAgentType, formatTimestamp } from '../../_lib/agent-format';
+import { formatAgentType, formatTimestamp } from '../_lib/agent-format';
 
 type AgentsDashboardResponse = {
   items: AgentDashBoardDto[];
@@ -28,6 +28,13 @@ export function AgentsInfiniteList({
   const [reachedEnd, setReachedEnd] = React.useState(false);
 
   const sentinelRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    setAgents(initialAgents);
+    setNextPage(initialNextPage);
+    setError(null);
+    setReachedEnd(initialNextPage === null && initialAgents.length > 0);
+  }, [initialAgents, initialNextPage]);
 
   const loadMore = React.useCallback(async () => {
     if (isLoading) return;

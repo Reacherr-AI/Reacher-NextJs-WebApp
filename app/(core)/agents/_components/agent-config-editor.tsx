@@ -7,7 +7,7 @@ import {
   getLLMProviders,
   getSTTProvidersWithLanguages,
   getTTSProvidersWithLanguages,
-} from '../../_lib/conversation-config';
+} from '../_lib/conversation-config';
 import { KNOWN_POST_CALL_FIELD_TYPES, type KnownPostCallFieldType, type PostCallField } from '@/types';
 import {
   BookOpen,

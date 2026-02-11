@@ -26,8 +26,6 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isReacherrLlmDto = (value: unknown): value is ReacherrLlmDto =>
   isRecord(value) && (value.llmId === undefined || typeof value.llmId === 'string');
 
-const nowSlug = () => new Date().toISOString().replace(/[:.]/g, '-');
-
 export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
 
@@ -68,7 +66,7 @@ export async function POST(req: Request) {
   }
 
   const agentBody: VoiceAgentCreateBody = {
-    agentName: `Single-Prompt Agent ${nowSlug()}`,
+    agentName: `Single-Prompt Agent`,
     responseEngine: { type: 'REACHERR_LLM', llmId, version: 0 },
   };
 

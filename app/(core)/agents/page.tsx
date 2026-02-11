@@ -1,7 +1,7 @@
 import { apiFetch } from '@/lib/api';
 import type { AgentDashBoardDto, AgentTemplateType, TemplateDto } from '@/types';
 import { AgentsInfiniteList } from './_components/agents-infinite-list';
-import { formatTimestamp } from '../_lib/agent-format';
+import { formatTimestamp } from './_lib/agent-format';
 import { CreateAgentModal } from './_components/create-agent-modal';
 
 const PAGE_SIZE = 50;
