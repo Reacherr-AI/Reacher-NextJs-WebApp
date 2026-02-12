@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, LayoutDashboard } from 'lucide-react';
+import { Bot, BookOpen, LayoutDashboard } from 'lucide-react';
 
 import {
   Sidebar,
@@ -24,6 +24,11 @@ const navItems = [
     href: '/agents',
     label: 'Agents',
     icon: LayoutDashboard,
+  },
+  {
+    href: '/knowledge-base',
+    label: 'Knowledge Base',
+    icon: BookOpen,
   },
 ] as const;
 

@@ -3,14 +3,32 @@ export interface KBTextRequestDto {
   text: string;
 }
 
-// The OpenAPI spec models this as `multipart/form-data`.
-// In practice you will send a `FormData` body, but this type captures the fields.
-export interface CreateKnowledgeBaseFields {
-  knowledgeBaseName: string;
-  knowledgeBaseTexts?: KBTextRequestDto[];
-  knowledgeBaseFiles?: Blob[];
-  knowledgeBaseUrls?: string[];
+export type KnowledgeBaseStatus = 'CREATING' | 'COMPLETE' | 'FAILED';
+
+export type KnowledgeBaseSourceType = 'FILE' | 'TEXT' | 'URL';
+
+export interface KnowledgeBaseSourceDto {
+  type: KnowledgeBaseSourceType;
+  sourceId: string;
+  filename?: string;
+  fileUrl?: string;
+  title?: string;
+  contentUrl?: string;
+  url?: string;
 }
 
-export type CreateKnowledgeBaseResponseBody = Record<string, unknown>;
+export interface KnowledgeBaseDto {
+  knowledgeBaseId: string;
+  knowledgeBaseName: string;
+  status: KnowledgeBaseStatus;
+  knowledgeBaseSources: KnowledgeBaseSourceDto[];
+  lastUpdatedTime: number;
+}
 
+export interface ListSitemapRequestDto {
+  websiteUrl: string;
+}
+
+export type ListSitemapResponseDto = string[];
+
+export type CreateKnowledgeBaseResponseBody = KnowledgeBaseDto;

@@ -5,7 +5,11 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:808
 export const apiFetch = async (path: string, init: RequestInit = {}) => {
   const token = await getAccessToken();
   const headers = new Headers(init.headers);
-  headers.set('Content-Type', 'application/json');
+
+  if (!(init.body instanceof FormData) && !headers.has('Content-Type') && init.body !== undefined) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }

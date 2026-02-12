@@ -3,7 +3,13 @@ import { CreateWebCallRequest, CreateWebCallResponse } from './call';
 import { ConversationFlowRequest, ConversationFlowResponse } from './conversation-flow';
 import { AgentConversationConfigResponse } from './conversation-config';
 import { BedrockJobMonitorWebhookRequestBody, BedrockJobMonitorWebhookResponse } from './bedrock';
-import { CreateKnowledgeBaseResponseBody } from './knowledge-base';
+import {
+  CreateKnowledgeBaseResponseBody,
+  KnowledgeBaseDto,
+  KnowledgeBaseSourceDto,
+  ListSitemapRequestDto,
+  ListSitemapResponseDto,
+} from './knowledge-base';
 import { LivekitWebhookRequestBody, LivekitWebhookResponse } from './livekit';
 import {
   AddPhoneRequest,
@@ -226,3 +232,54 @@ export interface CreateKnowledgeBaseRequest {
 }
 
 export type CreateKnowledgeBaseResponse = CreateKnowledgeBaseResponseBody;
+
+export type ListKnowledgeBasesResponse = KnowledgeBaseDto[];
+
+export interface GetKnowledgeBaseRequest {
+  params: {
+    knowledgeBaseId: string;
+  };
+}
+
+export type GetKnowledgeBaseResponse = KnowledgeBaseDto;
+
+export interface AddKnowledgeBaseSourcesRequest {
+  params: {
+    knowledgeBaseId: string;
+  };
+  body: FormData;
+}
+
+export type AddKnowledgeBaseSourcesResponse = KnowledgeBaseDto;
+
+export interface GetKnowledgeBaseSourceRequest {
+  params: {
+    knowledgeBaseId: string;
+    sourceId: string;
+  };
+}
+
+export type GetKnowledgeBaseSourceResponse = KnowledgeBaseSourceDto;
+
+export interface DeleteKnowledgeBaseRequest {
+  params: {
+    knowledgeBaseId: string;
+  };
+}
+
+export type DeleteKnowledgeBaseResponse = void;
+
+export interface DeleteKnowledgeBaseSourceRequest {
+  params: {
+    knowledgeBaseId: string;
+    sourceId: string;
+  };
+}
+
+export type DeleteKnowledgeBaseSourceResponse = void;
+
+export interface ListSitemapRequest {
+  body: ListSitemapRequestDto;
+}
+
+export type ListSitemapResponse = ListSitemapResponseDto;
