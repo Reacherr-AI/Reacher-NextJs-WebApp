@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button';
 import { AddSourceMenu } from './add-source-menu';
 import { AddTextSourceModal } from './add-text-source-modal';
 import { AddWebPagesModal } from './add-web-pages-modal';
+import { KnowledgeBaseStatusPill } from './knowledge-base-status-pill';
+import {
+  KNOWLEDGE_BASE_FILE_ACCEPT,
+  knowledgeBaseFileValidationErrorMessage,
+  splitAllowedKnowledgeBaseFiles,
+} from '../_lib/file-formats';
 import type { DraftTextSource, DraftUrlSource } from './types';
 
 type KnowledgeBaseDetailPanelProps = {
@@ -76,17 +82,24 @@ export function KnowledgeBaseDetailPanel({
         ref={fileInputRef}
         type="file"
         multiple
+        accept={KNOWLEDGE_BASE_FILE_ACCEPT}
         className="hidden"
         onChange={(event) => {
           const files = Array.from(event.target.files ?? []);
           event.currentTarget.value = '';
 
           if (files.length === 0) return;
+          const { validFiles, invalidTypeFiles, oversizedFiles } = splitAllowedKnowledgeBaseFiles(files);
 
           void (async () => {
-            setActionError(null);
+            setActionError(
+              invalidTypeFiles.length || oversizedFiles.length
+                ? knowledgeBaseFileValidationErrorMessage(invalidTypeFiles, oversizedFiles)
+                : null
+            );
+            if (validFiles.length === 0) return;
             try {
-              await onAddFiles(knowledgeBase.knowledgeBaseId, files);
+              await onAddFiles(knowledgeBase.knowledgeBaseId, validFiles);
             } catch (error) {
               setActionError(error instanceof Error ? error.message : 'Unable to add files.');
             }
@@ -97,7 +110,16 @@ export function KnowledgeBaseDetailPanel({
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
         <div>
           <h2 className="text-2xl font-semibold">{knowledgeBase.knowledgeBaseName}</h2>
+          <KnowledgeBaseStatusPill status={knowledgeBase.status} className="mt-2" />
           <p className="mt-2 text-sm text-white/60">Last updated: {formatDate(knowledgeBase.lastUpdatedTime)}</p>
+          {knowledgeBase.status === 'CREATING' ? (
+            <p className="mt-2 text-xs text-sky-100/90">This knowledge base is still being processed.</p>
+          ) : null}
+          {knowledgeBase.status === 'FAILED' ? (
+            <p className="mt-2 text-xs text-red-200/90">
+              Processing failed. You can add or replace sources and try again.
+            </p>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-2">
