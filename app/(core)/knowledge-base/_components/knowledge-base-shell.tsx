@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import type { KnowledgeBaseDto } from '@/types';
+import { useEffect, useMemo, useState } from 'react';
+import type { KnowledgeBaseDto, KnowledgeBaseStatus } from '@/types';
 import { KnowledgeBaseListPanel } from './knowledge-base-list-panel';
 import { KnowledgeBaseDetailPanel } from './knowledge-base-detail-panel';
 import { CreateKnowledgeBaseModal } from './create-knowledge-base-modal';
+import { createKnowledgeBaseTextFile } from '../_lib/file-formats';
 import type { DraftTextSource, DraftUrlSource } from './types';
 
 type ApiError = { message?: unknown };
@@ -13,6 +14,8 @@ type KnowledgeBaseShellProps = {
   initialKnowledgeBases: KnowledgeBaseDto[];
   initialError: string | null;
 };
+
+const TRANSITION_STATUSES: KnowledgeBaseStatus[] = ['CREATING'];
 
 const parseErrorMessage = (status: number, data: unknown) => {
   if (typeof (data as ApiError | null)?.message === 'string') {
@@ -53,6 +56,10 @@ export function KnowledgeBaseShell({ initialKnowledgeBases, initialError }: Know
   const selectedKnowledgeBase = useMemo(
     () => knowledgeBases.find((kb) => kb.knowledgeBaseId === selectedKnowledgeBaseId) ?? null,
     [knowledgeBases, selectedKnowledgeBaseId]
+  );
+  const hasTransitioningKnowledgeBase = useMemo(
+    () => knowledgeBases.some((kb) => TRANSITION_STATUSES.includes(kb.status)),
+    [knowledgeBases]
   );
 
   const upsertKnowledgeBase = (updatedKnowledgeBase: KnowledgeBaseDto) => {
@@ -140,13 +147,8 @@ export function KnowledgeBaseShell({ initialKnowledgeBases, initialError }: Know
 
     try {
       const formData = new FormData();
-      formData.append(
-        'knowledgeBaseTexts',
-        new Blob([JSON.stringify({ title: textSource.title, text: textSource.text })], {
-          type: 'application/json',
-        }),
-        'knowledgeBaseText.json'
-      );
+      const textFile = createKnowledgeBaseTextFile(textSource.title, textSource.text);
+      formData.append('knowledgeBaseFiles', textFile, textFile.name);
 
       const updated = await requestJson<KnowledgeBaseDto>(
         `/api/knowledge-base/${encodeURIComponent(knowledgeBaseId)}/sources`,
@@ -185,6 +187,36 @@ export function KnowledgeBaseShell({ initialKnowledgeBases, initialError }: Know
       setBusy(false);
     }
   };
+
+  useEffect(() => {
+    if (!hasTransitioningKnowledgeBase) return;
+
+    let cancelled = false;
+
+    const refreshKnowledgeBases = async () => {
+      try {
+        const latest = await requestJson<KnowledgeBaseDto[]>('/api/knowledge-base', { method: 'GET' });
+        if (cancelled) return;
+        setKnowledgeBases(latest);
+        setSelectedKnowledgeBaseId((current) => {
+          if (!current) return latest[0]?.knowledgeBaseId ?? null;
+          return latest.some((kb) => kb.knowledgeBaseId === current) ? current : latest[0]?.knowledgeBaseId ?? null;
+        });
+      } catch {
+        // Polling errors should not interrupt user actions.
+      }
+    };
+
+    void refreshKnowledgeBases();
+    const timer = window.setInterval(() => {
+      void refreshKnowledgeBases();
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [hasTransitioningKnowledgeBase]);
 
   return (
     <>
