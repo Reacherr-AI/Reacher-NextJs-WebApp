@@ -22,6 +22,10 @@ export async function POST(req: Request) {
 
   const res = await apiFetch('/api/v1/list-sitemap', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
     body: JSON.stringify(body),
   });
 

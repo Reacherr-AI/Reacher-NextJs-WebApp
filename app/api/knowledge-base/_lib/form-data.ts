@@ -5,10 +5,17 @@ export const appendKnowledgeBaseSources = (target: FormData, source: FormData) =
     }
   }
 
+  const urlValues: string[] = [];
   for (const value of source.getAll('knowledgeBaseUrls')) {
     if (typeof value === 'string' && value.trim().length > 0) {
-      target.append('knowledgeBaseUrls', value.trim());
+      urlValues.push(value.trim());
     }
+  }
+  if (urlValues.length > 0) {
+    target.append(
+      'knowledgeBaseUrls',
+      new Blob([JSON.stringify(urlValues)], { type: 'application/json' })
+    );
   }
 
   for (const value of source.getAll('knowledgeBaseTexts')) {

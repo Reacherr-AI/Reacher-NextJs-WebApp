@@ -136,7 +136,7 @@ export function KnowledgeBaseDetailPanel({
             No sources yet. Use the Add button to include files, web pages, or text.
           </div>
         ) : (
-          <div className="mt-3 space-y-3">
+          <div className="mt-3 max-h-[32rem] space-y-3 overflow-y-auto pr-1">
             {knowledgeBase.knowledgeBaseSources.map((source) => {
               const meta = sourceMeta(source);
 
