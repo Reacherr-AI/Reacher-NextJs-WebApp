@@ -57,3 +57,90 @@ h6 {
     transform: translateY(calc(-100% - var(--gap)));
   }
 }
+
+
+@layer base {
+  :root {
+    --background: #000000;
+    --foreground: #ffffff;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+}
+.animate-pendulum {
+  transform-origin: 50% -150vh;
+  animation: pendulum-desktop 10s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes pendulum-desktop {
+  0% { transform: rotate(32deg); }
+  100% { transform: rotate(-32deg); }
+}
+
+/* ===== TABLET ===== */
+@media (max-width: 1024px) {
+  .animate-pendulum {
+    transform-origin: 50% -90vh;
+    animation: pendulum-tablet 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes pendulum-tablet {
+    0% { transform: rotate(24deg); }
+    100% { transform: rotate(-24deg); }
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 640px) {
+  .animate-pendulum {
+    transform-origin: 50% -80vh;
+    animation: pendulum-mobile 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes pendulum-mobile {
+    0% { transform: rotate(16deg); }
+    100% { transform: rotate(-16deg); }
+  }
+}
+
+@keyframes followArc {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  85% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.orbit-icon {
+  position: absolute;
+  offset-path: path("M-50,300 Q250,-100 650,350");
+  offset-rotate: 0deg; /* Keeps icon upright */
+  
+  /* Animation */
+  animation: followArc 12s linear infinite;
+  opacity: 0; 
+}
+
+@media (max-width: 640px) {
+  .orbit-icon {
+    /* M: Start point, Q: Control point (peak), Final: End point */
+    /* This creates a shallow arc that fits within a 320px-375px screen */
+    offset-path: path("M-0,150 Q160,-50 320,150");
+  }
+}
