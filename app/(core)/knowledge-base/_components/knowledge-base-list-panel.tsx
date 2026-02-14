@@ -2,6 +2,7 @@
 
 import type { KnowledgeBaseDto } from '@/types';
 import { Button } from '@/components/ui/button';
+import { KnowledgeBaseStatusPill } from './knowledge-base-status-pill';
 
 type KnowledgeBaseListPanelProps = {
   knowledgeBases: KnowledgeBaseDto[];
@@ -50,7 +51,10 @@ export function KnowledgeBaseListPanel({
                     : 'border-white/10 bg-black/20 hover:border-white/20 hover:bg-white/10',
                 ].join(' ')}
               >
-                <p className="truncate text-sm font-medium">{kb.knowledgeBaseName}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="truncate text-sm font-medium">{kb.knowledgeBaseName}</p>
+                  <KnowledgeBaseStatusPill status={kb.status} className="shrink-0" />
+                </div>
                 <p className="mt-1 text-xs text-white/60">{kb.knowledgeBaseSources.length} source(s)</p>
               </button>
             );

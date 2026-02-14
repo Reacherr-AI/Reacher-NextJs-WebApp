@@ -1,0 +1,100 @@
+import { NextResponse } from 'next/server';
+import type { PhoneNumberRequestDto, PhoneNumberResposneDto } from '@/types';
+import { apiFetch } from '@/lib/api';
+import { parseJsonResponse } from '@/lib/route-helpers';
+
+const COUNTRY_CODES = ['US', 'CA', 'IN', 'IT', 'FR'] as const;
+const PHONE_NUMBER_TYPES = ['TWILIO', 'CUSTOM', 'TELNYX', 'PLIVO'] as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isNonEmptyString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
+
+const isCountryCode = (value: unknown): value is (typeof COUNTRY_CODES)[number] =>
+  typeof value === 'string' &&
+  COUNTRY_CODES.some((countryCode) => countryCode === value);
+
+const isPhoneNumberType = (value: unknown): value is (typeof PHONE_NUMBER_TYPES)[number] =>
+  typeof value === 'string' &&
+  PHONE_NUMBER_TYPES.some((phoneNumberType) => phoneNumberType === value);
+
+const isPhoneNumberResponseDto = (value: unknown): value is PhoneNumberResposneDto => {
+  if (!isRecord(value)) return false;
+  if (value.phoneNumber !== undefined && !isNonEmptyString(value.phoneNumber)) return false;
+  if (value.countryCode !== undefined && !isCountryCode(value.countryCode)) return false;
+  if (value.nickname !== undefined && typeof value.nickname !== 'string') return false;
+  if (value.inboundWebhookUrl !== undefined && typeof value.inboundWebhookUrl !== 'string') return false;
+  if (value.areaCode !== undefined && typeof value.areaCode !== 'number') return false;
+  if (
+    value.allowedInboundCountry !== undefined &&
+    (!Array.isArray(value.allowedInboundCountry) ||
+      value.allowedInboundCountry.some((countryCode) => !isCountryCode(countryCode)))
+  ) {
+    return false;
+  }
+  if (
+    value.allowedOutboundCountry !== undefined &&
+    (!Array.isArray(value.allowedOutboundCountry) ||
+      value.allowedOutboundCountry.some((countryCode) => !isCountryCode(countryCode)))
+  ) {
+    return false;
+  }
+  if (value.phoneNumberType !== undefined && !isPhoneNumberType(value.phoneNumberType)) return false;
+  if (value.inboundAgentId !== undefined && typeof value.inboundAgentId !== 'string') return false;
+  if (value.outboundAgentId !== undefined && typeof value.outboundAgentId !== 'string') return false;
+  if (value.tollFree !== undefined && typeof value.tollFree !== 'boolean') return false;
+  return true;
+};
+
+const parsePhoneNumberList = (value: unknown): PhoneNumberResposneDto[] => {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isPhoneNumberResponseDto);
+};
+
+const isCreatePhoneNumberBody = (value: unknown): value is PhoneNumberRequestDto => {
+  if (!isRecord(value)) return false;
+  if (!isNonEmptyString(value.phoneNumber)) return false;
+  if (value.phoneNumberType !== undefined && !isPhoneNumberType(value.phoneNumberType)) return false;
+  if (value.countryCode !== undefined && !isCountryCode(value.countryCode)) return false;
+  if (value.isTollFree !== undefined && typeof value.isTollFree !== 'boolean') return false;
+  return true;
+};
+
+export async function GET() {
+  const res = await apiFetch('/api/v1/list-phone-number', { method: 'POST' });
+  const parsed = await parseJsonResponse<unknown>(res);
+
+  if (!parsed.ok) {
+    return NextResponse.json(parsed.data, { status: parsed.status });
+  }
+
+  return NextResponse.json({
+    items: parsePhoneNumberList(parsed.data),
+  });
+}
+
+export async function POST(req: Request) {
+  const raw = (await req.json().catch(() => null)) as unknown;
+
+  if (!isCreatePhoneNumberBody(raw)) {
+    return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
+  }
+
+  const res = await apiFetch('/api/v1/create-phone-number', {
+    method: 'POST',
+    body: JSON.stringify(raw),
+  });
+  const parsed = await parseJsonResponse<unknown>(res);
+
+  if (!parsed.ok) {
+    return NextResponse.json(parsed.data, { status: parsed.status });
+  }
+
+  if (!isPhoneNumberResponseDto(parsed.data)) {
+    return NextResponse.json({ message: 'Unexpected create response from backend.' }, { status: 502 });
+  }
+
+  return NextResponse.json(parsed.data);
+}
