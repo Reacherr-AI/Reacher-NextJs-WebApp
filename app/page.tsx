@@ -12,6 +12,7 @@ import { FeaturesGrid } from "@/components/ui/features-grid";
 import { SiteNavbar } from "@/components/layout/site-navbar";
 import { HaveQuestionsSection } from "@/components/layout/have-questions";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { getAccessToken } from "@/lib/auth/auth-cookies";
 // Import the new client component
 import { InteractiveUseCases } from "@/components/home/use-cases";
 import { ToolsShowcase } from "@/components/home/tools-showcase";
@@ -89,7 +90,9 @@ const featureItems = [
   },
 ] as const;
 
-export default function Home() {
+export default async function Home() {
+  const accessToken = await getAccessToken();
+  const isLoggedIn = !!(accessToken && accessToken.trim().length > 0);
   return (
     <div className="min-h-screen bg-black">
       <main className="relative mx-auto flex min-h-screen sm:min-h-[850px] w-full max-w-378 flex-col overflow-hidden rounded-b-[24px] bg-black px-6 pb-24 pt-10 shadow-2xl sm:px-10">
@@ -105,7 +108,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <SiteNavbar activeLabel="Home" />
+        <SiteNavbar activeLabel="Home" showDashboard={isLoggedIn}/>
         <div className="relative z-10 w-full flex flex-col items-center">
           <section className="mt-16 flex flex-col items-center justify-center text-center text-white sm:flex-1">
             <div className="max-w-3xl">
