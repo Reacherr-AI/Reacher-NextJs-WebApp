@@ -1,3 +1,6 @@
-export type BedrockJobMonitorWebhookRequestBody = string;
-export type BedrockJobMonitorWebhookResponse = void;
+export interface BedrockJobMonitorWebhookRequestBody {
+  jobId: string;
+  status: string;
+}
 
+export type BedrockJobMonitorWebhookResponse = void;
