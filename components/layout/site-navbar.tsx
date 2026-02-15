@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
-import { getAccessToken } from "@/lib/auth/auth-cookies";
 
 type SiteNavbarLink = {
   label: string;
