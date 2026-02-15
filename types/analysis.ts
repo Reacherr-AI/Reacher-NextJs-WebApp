@@ -2,6 +2,10 @@ export interface AnalysisData {
   type: string;
 }
 
+// UI-known field types. Backend may return other strings; treat those as custom.
+export const KNOWN_POST_CALL_FIELD_TYPES = ['string', 'boolean', 'number', 'enum'] as const;
+export type KnownPostCallFieldType = (typeof KNOWN_POST_CALL_FIELD_TYPES)[number];
+
 export interface BooleanPostCallField extends AnalysisData {
   name?: string;
   description?: string;

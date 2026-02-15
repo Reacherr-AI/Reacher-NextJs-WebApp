@@ -3,6 +3,27 @@
 Reusable UI primitives live in `nextjs_reacherr_frontend/components/ui/`.
 Reusable layout-level components live in `nextjs_reacherr_frontend/components/layout/`.
 
+## FeatureCard
+
+File: `nextjs_reacherr_frontend/components/layout/feature-card.tsx`
+
+Reusable gradient + texture card used for marketing panels (for example the Use Case cards on `/`).
+
+```tsx
+import { FeatureCard } from "@/components/layout/feature-card";
+
+<FeatureCard
+  title="Lead Qualification"
+  icon={<span className="text-white">LQ</span>}
+  description="Identify potential clients and screen prospects."
+  action={
+    <button className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/80">
+      Learn More
+    </button>
+  }
+/>;
+```
+
 ## Marquee
 
 File: `nextjs_reacherr_frontend/components/ui/marquee.tsx`
@@ -115,7 +136,7 @@ import { ProductHero } from "@/components/layout/product-hero";
 
 ## Design Trick: Gradient + Texture Layering
 
-Used to keep card backgrounds consistent across pages (for example the Use Case cards on `/` and the Enterprise card on `/pricing`).
+Used to keep card backgrounds consistent across pages (for example `FeatureCard` on `/` and the Enterprise card on `/pricing`).
 
 Pattern:
 1. Base panel (`bg-linear-to-br ...`) for subtle depth.

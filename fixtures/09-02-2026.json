@@ -1,0 +1,3349 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "OpenAPI definition",
+        "version": "v0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {
+        "/api/v1/webhook/livekit": {
+            "post": {
+                "tags": [
+                    "livekit-webhook-controller"
+                ],
+                "operationId": "handleWebhook",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/webhook/bedrock-job-monitor": {
+            "post": {
+                "tags": [
+                    "bedrock-webhook-controller"
+                ],
+                "operationId": "bedrockJobUpdate",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/verify/phone": {
+            "post": {
+                "tags": [
+                    "otp-verification-controller"
+                ],
+                "operationId": "verifyPhone",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OtpVerificationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/verify/email": {
+            "post": {
+                "tags": [
+                    "otp-verification-controller"
+                ],
+                "operationId": "verifyEmail",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OtpVerificationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/update-phone-number/{phoneNumber}": {
+            "post": {
+                "tags": [
+                    "phone-number-controller"
+                ],
+                "operationId": "updatePhoneNumber",
+                "parameters": [
+                    {
+                        "name": "phoneNumber",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhoneNumberRequestDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhoneNumberResposneDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/phone/add": {
+            "post": {
+                "tags": [
+                    "otp-verification-controller"
+                ],
+                "operationId": "addPhone",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AddPhoneRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/list-phone-number": {
+            "post": {
+                "tags": [
+                    "phone-number-controller"
+                ],
+                "operationId": "listPhoneNumber",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PhoneNumberResposneDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/list-available-numbers": {
+            "post": {
+                "tags": [
+                    "phone-number-controller"
+                ],
+                "operationId": "availableNumbers",
+                "parameters": [
+                    {
+                        "name": "pageable",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Pageable"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AvailableNumberRequestDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AvailableNumberResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-web-call": {
+            "post": {
+                "tags": [
+                    "livekit-room-controller"
+                ],
+                "operationId": "createWebCall",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateWebCallRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreateWebCallResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-voice-agent": {
+            "post": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "createVoiceAgent",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VoiceAgentDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VoiceAgentDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-reacherr-llm": {
+            "post": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "createReacherrLlm",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReacherrLlmDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReacherrLlmDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-phone-number": {
+            "post": {
+                "tags": [
+                    "phone-number-controller"
+                ],
+                "operationId": "buyNumber",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhoneNumberRequestDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhoneNumberResposneDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-knowledge-base": {
+            "post": {
+                "tags": [
+                    "knowledge-base-controller"
+                ],
+                "operationId": "createKnowledgeBase",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "knowledgeBaseName": {
+                                        "type": "string"
+                                    },
+                                    "knowledgeBaseTexts": {
+                                        "type": "array",
+                                        "items": {
+                                            "$ref": "#/components/schemas/KBTextRequestDto"
+                                        }
+                                    },
+                                    "knowledgeBaseFiles": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    },
+                                    "knowledgeBaseUrls": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "knowledgeBaseName"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-conversation-flow": {
+            "post": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "createConversationFlow",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ConversationFlowRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConversationFlowResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-chat-agent": {
+            "post": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "createChatAgent",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChatAgentDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ChatAgentDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/create-agent-from-template/{templateId}": {
+            "post": {
+                "tags": [
+                    "template-controller"
+                ],
+                "operationId": "createAgentFromTemplate",
+                "parameters": [
+                    {
+                        "name": "templateId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VoiceAgentDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/connect-phone-number": {
+            "post": {
+                "tags": [
+                    "phone-number-controller"
+                ],
+                "operationId": "connectPhoneNumber",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PhoneNumberRequestDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PhoneNumberResposneDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/signup": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "registerUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SignUpRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/signout": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/signin": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "authenticateUser",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/refresh": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "refreshToken",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshTokenRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/ChallengeResponse"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/JwtResponse"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/delete-user/{username}": {
+            "post": {
+                "tags": [
+                    "auth-controller"
+                ],
+                "operationId": "deleteUser",
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/update-reacherr-llm/{llmId}": {
+            "patch": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "updateReacherrLlm",
+                "parameters": [
+                    {
+                        "name": "llmId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReacherrLlmDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReacherrLlmDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/publish-voice-agent/{agentId}": {
+            "patch": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "updateVoiceAgent",
+                "parameters": [
+                    {
+                        "name": "agentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VoiceAgentDto"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VoiceAgentDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/templates": {
+            "get": {
+                "tags": [
+                    "template-controller"
+                ],
+                "operationId": "listAllTemplates",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TemplateDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/list-voice-agent": {
+            "get": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "getAllVoiceAgent",
+                "parameters": [
+                    {
+                        "name": "pageable",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Pageable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/VoiceAgentDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/list-reacherr-llm": {
+            "get": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "listReacherrLlm",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReacherrLlmDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/list-agent-dashboard": {
+            "get": {
+                "tags": [
+                    "agent-dash-board-controller"
+                ],
+                "operationId": "listAgentDashBoard",
+                "parameters": [
+                    {
+                        "name": "pageable",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/Pageable"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AgentDashBoardDto"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/get-voice-agent/{agentId}": {
+            "get": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "listVoiceAgent",
+                "parameters": [
+                    {
+                        "name": "agentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VoiceAgentDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/get-reacherr-llm/{llmId}": {
+            "get": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "getReacherLlm",
+                "parameters": [
+                    {
+                        "name": "llmId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ReacherrLlmDto"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/conversation/config": {
+            "get": {
+                "tags": [
+                    "agent-conversation-controller"
+                ],
+                "operationId": "getAgentResources",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AgentConversationConfigResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/delete-voice-agent/{agentId}": {
+            "delete": {
+                "tags": [
+                    "agent-controller"
+                ],
+                "operationId": "deleteVoiceAgent",
+                "parameters": [
+                    {
+                        "name": "agentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/delete-reacherr-llm/{llmId}": {
+            "delete": {
+                "tags": [
+                    "response-engine-controller"
+                ],
+                "operationId": "deleteReacherrLlm",
+                "parameters": [
+                    {
+                        "name": "llmId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "OtpVerificationRequest": {
+                "type": "object",
+                "properties": {
+                    "challengeToken": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "otp": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "otpType": {
+                        "type": "string",
+                        "enum": [
+                            "EMAIL",
+                            "PHONE"
+                        ]
+                    }
+                },
+                "required": [
+                    "challengeToken",
+                    "otp",
+                    "otpType"
+                ]
+            },
+            "AuthResponse": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "ChallengeResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AuthResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "challengeToken": {
+                                "type": "string"
+                            },
+                            "challengeType": {
+                                "type": "string",
+                                "enum": [
+                                    "EMAIL",
+                                    "PHONE",
+                                    "ADD_PHONE"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "JwtResponse": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AuthResponse"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "accessToken": {
+                                "type": "string"
+                            },
+                            "refreshToken": {
+                                "type": "string"
+                            },
+                            "userId": {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            "username": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "PhoneNumberRequestDto": {
+                "type": "object",
+                "properties": {
+                    "phoneNumber": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "isTollFree": {
+                        "type": "boolean"
+                    },
+                    "countryCode": {
+                        "type": "string",
+                        "enum": [
+                            "US",
+                            "CA",
+                            "IN",
+                            "IT",
+                            "FR"
+                        ]
+                    },
+                    "nickname": {
+                        "type": "string"
+                    },
+                    "inboundWebhookUrl": {
+                        "type": "string"
+                    },
+                    "areaCode": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "allowedInboundCountry": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "US",
+                                "CA",
+                                "IN",
+                                "IT",
+                                "FR"
+                            ]
+                        }
+                    },
+                    "allowedOutboundCountry": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "US",
+                                "CA",
+                                "IN",
+                                "IT",
+                                "FR"
+                            ]
+                        }
+                    },
+                    "phoneNumberType": {
+                        "type": "string",
+                        "enum": [
+                            "TWILIO",
+                            "CUSTOM",
+                            "TELNYX",
+                            "PLIVO"
+                        ]
+                    },
+                    "terminationUri": {
+                        "type": "string"
+                    },
+                    "authUserName": {
+                        "type": "string"
+                    },
+                    "authPassword": {
+                        "type": "string"
+                    },
+                    "transportType": {
+                        "type": "string",
+                        "enum": [
+                            "UDP",
+                            "TCP",
+                            "TLS",
+                            "AUTO"
+                        ]
+                    },
+                    "inboundAgentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "outboundAgentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                },
+                "required": [
+                    "phoneNumber"
+                ]
+            },
+            "PhoneNumberResposneDto": {
+                "type": "object",
+                "properties": {
+                    "phoneNumber": {
+                        "type": "string"
+                    },
+                    "countryCode": {
+                        "type": "string",
+                        "enum": [
+                            "US",
+                            "CA",
+                            "IN",
+                            "IT",
+                            "FR"
+                        ]
+                    },
+                    "nickname": {
+                        "type": "string"
+                    },
+                    "inboundWebhookUrl": {
+                        "type": "string"
+                    },
+                    "areaCode": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "allowedInboundCountry": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "US",
+                                "CA",
+                                "IN",
+                                "IT",
+                                "FR"
+                            ]
+                        }
+                    },
+                    "allowedOutboundCountry": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "US",
+                                "CA",
+                                "IN",
+                                "IT",
+                                "FR"
+                            ]
+                        }
+                    },
+                    "phoneNumberType": {
+                        "type": "string",
+                        "enum": [
+                            "TWILIO",
+                            "CUSTOM",
+                            "TELNYX",
+                            "PLIVO"
+                        ]
+                    },
+                    "inboundAgentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "outboundAgentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "sipTrunkConfig": {
+                        "$ref": "#/components/schemas/SipTrunkDto"
+                    },
+                    "tollFree": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "SipTrunkDto": {
+                "type": "object",
+                "properties": {
+                    "terminationUri": {
+                        "type": "string"
+                    },
+                    "authUsername": {
+                        "type": "string"
+                    },
+                    "authPassword": {
+                        "type": "string"
+                    },
+                    "transportType": {
+                        "type": "string",
+                        "enum": [
+                            "UDP",
+                            "TCP",
+                            "TLS",
+                            "AUTO"
+                        ]
+                    }
+                }
+            },
+            "AddPhoneRequest": {
+                "type": "object",
+                "properties": {
+                    "phone": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "challengeToken": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "challengeToken",
+                    "phone"
+                ]
+            },
+            "AvailableNumberRequestDto": {
+                "type": "object",
+                "properties": {
+                    "countryCode": {
+                        "type": "string",
+                        "enum": [
+                            "US",
+                            "CA",
+                            "IN",
+                            "IT",
+                            "FR"
+                        ]
+                    },
+                    "provider": {
+                        "type": "string",
+                        "enum": [
+                            "TWILIO",
+                            "CUSTOM",
+                            "TELNYX",
+                            "PLIVO"
+                        ]
+                    },
+                    "contains": {
+                        "type": "string"
+                    },
+                    "isTollFree": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "countryCode",
+                    "isTollFree",
+                    "provider"
+                ]
+            },
+            "Pageable": {
+                "type": "object",
+                "properties": {
+                    "page": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 0
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32",
+                        "minimum": 1
+                    },
+                    "sort": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "AvailableNumberResponse": {
+                "type": "object",
+                "properties": {
+                    "numbers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "last": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "CreateWebCallRequest": {
+                "type": "object",
+                "properties": {
+                    "agentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    }
+                }
+            },
+            "CallCost": {},
+            "CreateWebCallResponse": {
+                "type": "object",
+                "properties": {
+                    "callId": {
+                        "type": "string"
+                    },
+                    "callType": {
+                        "type": "string",
+                        "enum": [
+                            "WEB_CALL",
+                            "PHONE_CALL"
+                        ]
+                    },
+                    "agentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "agentName": {
+                        "type": "string"
+                    },
+                    "callCost": {
+                        "$ref": "#/components/schemas/CallCost"
+                    },
+                    "accessToken": {
+                        "type": "string"
+                    },
+                    "callStatus": {
+                        "type": "string",
+                        "enum": [
+                            "REGISTERED",
+                            "ONGOING",
+                            "ENDED",
+                            "ERROR"
+                        ]
+                    }
+                }
+            },
+            "Action": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "AnalysisData": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "BooleanPostCallField": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AnalysisData"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "ConversationFlowRefDto": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ResponseEngineRefDto"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "conversationFlowId": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                ]
+            },
+            "EnumPostCallField": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AnalysisData"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "choices": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "HungupVoiceMailAction": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Action"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "static_text",
+                                    "prompt",
+                                    "hangup"
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+            "NumberPostCallField": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AnalysisData"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "PiiConfig": {
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "post_call"
+                        ]
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "PERSON_NAME",
+                                "ADDRESS",
+                                "EMAIL",
+                                "PHONE_NUMBER",
+                                "SSN",
+                                "PASSPORT",
+                                "DRIVER_LICENSE",
+                                "CREDIT_CARD",
+                                "BANK_ACCOUNT",
+                                "PASSWORD",
+                                "PIN",
+                                "MEDICAL_ID",
+                                "DATE_OF_BIRTH",
+                                "CUSTOMER_ACCOUNT_NUMBER"
+                            ]
+                        },
+                        "minItems": 1,
+                        "uniqueItems": true
+                    }
+                },
+                "required": [
+                    "categories",
+                    "mode"
+                ]
+            },
+            "PromptVoicemailAction": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Action"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "static_text",
+                                    "prompt",
+                                    "hangup"
+                                ]
+                            },
+                            "prompt": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "ReacherrLlmRefDto": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ResponseEngineRefDto"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "llmId": {
+                                "type": "string",
+                                "format": "uuid"
+                            }
+                        }
+                    }
+                ]
+            },
+            "ResponseEngineRefDto": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "StaticTextVoicemailAction": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Action"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "static_text",
+                                    "prompt",
+                                    "hangup"
+                                ]
+                            },
+                            "text": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "StringPostCallField": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/AnalysisData"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "examples": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "SttConfig": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "model": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "settings": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "required": [
+                    "model",
+                    "provider"
+                ]
+            },
+            "TtsConfig": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "model": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "voiceId": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "avatarUrl": {
+                        "type": "string"
+                    },
+                    "settings": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                },
+                "required": [
+                    "model",
+                    "provider",
+                    "voiceId"
+                ]
+            },
+            "UserDtmfOptions": {
+                "type": "object",
+                "properties": {
+                    "digit_limit": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "termination_key": {
+                        "type": "string"
+                    },
+                    "timeout_ms": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "VoiceAgentDto": {
+                "type": "object",
+                "properties": {
+                    "agentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "lastUpdatedTimestamp": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "responseEngine": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ConversationFlowRefDto"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ReacherrLlmRefDto"
+                            }
+                        ]
+                    },
+                    "agentName": {
+                        "type": "string"
+                    },
+                    "isPublished": {
+                        "type": "boolean"
+                    },
+                    "ttsConfig": {
+                        "$ref": "#/components/schemas/TtsConfig"
+                    },
+                    "sttConfig": {
+                        "$ref": "#/components/schemas/SttConfig"
+                    },
+                    "language": {
+                        "type": "string",
+                        "enum": [
+                            "bn",
+                            "de",
+                            "en",
+                            "es",
+                            "fr",
+                            "gu",
+                            "hi",
+                            "it",
+                            "ja",
+                            "kn",
+                            "ko",
+                            "ml",
+                            "mr",
+                            "pa",
+                            "pt",
+                            "ta",
+                            "te",
+                            "zh"
+                        ]
+                    },
+                    "webhookUrl": {
+                        "type": "string"
+                    },
+                    "webhookTimeoutMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "maxCallDurationMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "ringTimeOutMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "noResponseTimeoutMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "enableVoicemailDetection": {
+                        "type": "boolean"
+                    },
+                    "voiceMailDetection": {
+                        "$ref": "#/components/schemas/VoicemailOption"
+                    },
+                    "analysisSuccessfulPrompt": {
+                        "type": "string"
+                    },
+                    "analysisSummaryPrompt": {
+                        "type": "string"
+                    },
+                    "postCallAnalysisData": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BooleanPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EnumPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NumberPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/StringPostCallField"
+                                }
+                            ]
+                        }
+                    },
+                    "versionDescription": {
+                        "type": "string"
+                    },
+                    "piiConfig": {
+                        "$ref": "#/components/schemas/PiiConfig"
+                    },
+                    "allowUserDtmf": {
+                        "type": "boolean"
+                    },
+                    "userDtmfOptions": {
+                        "$ref": "#/components/schemas/UserDtmfOptions"
+                    }
+                },
+                "required": [
+                    "agentName",
+                    "responseEngine"
+                ]
+            },
+            "VoicemailOption": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/HungupVoiceMailAction"
+                            },
+                            {
+                                "$ref": "#/components/schemas/PromptVoicemailAction"
+                            },
+                            {
+                                "$ref": "#/components/schemas/StaticTextVoicemailAction"
+                            }
+                        ]
+                    }
+                }
+            },
+            "BookAppointmentCalTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "calApiKey": {
+                                "type": "string"
+                            },
+                            "eventTypeId": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "timezone": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "CheckAvailabilityCalTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "tool_id": {
+                                "type": "string"
+                            },
+                            "calApiKey": {
+                                "type": "string"
+                            },
+                            "eventTypeId": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "timezone": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "$ref": "#/components/schemas/FlowTool"
+                    }
+                ]
+            },
+            "CustomTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "url": {
+                                "type": "string"
+                            },
+                            "method": {
+                                "type": "string"
+                            },
+                            "headers": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "queryParams": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            },
+                            "parameters": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            },
+                            "responseVariables": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "timeoutMs": {
+                                "type": "integer",
+                                "format": "int32"
+                            },
+                            "argsAtRoot": {
+                                "type": "boolean"
+                            },
+                            "tool_id": {
+                                "type": "string"
+                            },
+                            "speakDuringExecution": {
+                                "type": "boolean"
+                            },
+                            "speakAfterExecution": {
+                                "type": "boolean"
+                            },
+                            "executionMessageDescription": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    {
+                        "$ref": "#/components/schemas/FlowTool"
+                    }
+                ]
+            },
+            "EndCallTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "speakDuringExecution": {
+                                "type": "boolean"
+                            },
+                            "executionMessageDescription": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "KbConfig": {
+                "type": "object",
+                "properties": {
+                    "topK": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "filterScore": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "Mcp": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "query_params": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    },
+                    "timeout_ms": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "McpTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "mcpId": {
+                                "type": "string"
+                            },
+                            "inputSchema": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            },
+                            "responseVariables": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "speakDuringExecution": {
+                                "type": "boolean"
+                            },
+                            "speakAfterExecution": {
+                                "type": "boolean"
+                            },
+                            "executionMessageDescription": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "ReacherrLlmDto": {
+                "type": "object",
+                "properties": {
+                    "llmId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "lastModificationTimestamp": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "model": {
+                        "type": "string"
+                    },
+                    "s2sModel": {
+                        "type": "string",
+                        "enum": [
+                            "gpt-4o-realtime",
+                            "gpt-4o-mini-realtime",
+                            "gpt-realtime",
+                            "gpt-realtime-mini"
+                        ]
+                    },
+                    "temperature": {
+                        "type": "number",
+                        "format": "double",
+                        "maximum": 1,
+                        "minimum": 0
+                    },
+                    "maxTokens": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "modelHighPriority": {
+                        "type": "boolean"
+                    },
+                    "toolCallStrictMode": {
+                        "type": "boolean"
+                    },
+                    "kbConfig": {
+                        "$ref": "#/components/schemas/KbConfig"
+                    },
+                    "knowledgeBaseIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "startSpeaker": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "ai"
+                        ]
+                    },
+                    "beginMessage": {
+                        "type": "string"
+                    },
+                    "generalPrompt": {
+                        "type": "string"
+                    },
+                    "generalTools": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BookAppointmentCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CheckAvailabilityCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EndCallTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/McpTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/TransferCallTool"
+                                }
+                            ]
+                        }
+                    },
+                    "states": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/State"
+                        }
+                    },
+                    "startingState": {
+                        "type": "string"
+                    },
+                    "defaultDynamicVariables": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "mcps": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Mcp"
+                        }
+                    }
+                }
+            },
+            "State": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "state_prompt": {
+                        "type": "string"
+                    },
+                    "edges": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StateEdge"
+                        }
+                    },
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BookAppointmentCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CheckAvailabilityCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EndCallTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/McpTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/TransferCallTool"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "StateEdge": {
+                "type": "object",
+                "properties": {
+                    "destination_state_name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "parameters": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                }
+            },
+            "Tool": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "TransferCallTool": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "description": {
+                                "type": "string"
+                            },
+                            "transferDestination": {
+                                "type": "string"
+                            },
+                            "speakDuringExecution": {
+                                "type": "boolean"
+                            },
+                            "executionMessageDescription": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "KBTextRequestDto": {
+                "type": "object",
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "text": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "text",
+                    "title"
+                ]
+            },
+            "Component": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ConversationNode"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EndNode"
+                                }
+                            ]
+                        }
+                    },
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/CheckAvailabilityCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomTool"
+                                }
+                            ]
+                        }
+                    },
+                    "mcps": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Mcp"
+                        }
+                    },
+                    "start_node_id": {
+                        "type": "string"
+                    },
+                    "begin_tag_display_position": {
+                        "$ref": "#/components/schemas/DisplayPosition"
+                    }
+                }
+            },
+            "ConversationFlowRequest": {
+                "type": "object",
+                "properties": {
+                    "model_choice": {
+                        "$ref": "#/components/schemas/ModelChoice"
+                    },
+                    "start_speaker": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "ai"
+                        ]
+                    },
+                    "model_temperature": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "tool_call_strict_mode": {
+                        "type": "boolean"
+                    },
+                    "is_transfer_llm": {
+                        "type": "boolean"
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ConversationNode"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EndNode"
+                                }
+                            ]
+                        }
+                    },
+                    "start_node_id": {
+                        "type": "string"
+                    },
+                    "components": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Component"
+                        }
+                    },
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/CheckAvailabilityCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomTool"
+                                }
+                            ]
+                        }
+                    },
+                    "mcps": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Mcp"
+                        }
+                    },
+                    "knowledge_base_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "kb_config": {
+                        "$ref": "#/components/schemas/KbConfig"
+                    },
+                    "global_prompt": {
+                        "type": "string"
+                    },
+                    "begin_after_user_silence_ms": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "default_dynamic_variables": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "begin_tag_display_position": {
+                        "$ref": "#/components/schemas/DisplayPosition"
+                    }
+                }
+            },
+            "ConversationNode": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Node"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_position": {
+                                "$ref": "#/components/schemas/DisplayPosition"
+                            },
+                            "instruction": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/PromptInstruction"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/StaticTextInstruction"
+                                    }
+                                ]
+                            },
+                            "edges": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/FlowEdge"
+                                }
+                            },
+                            "global_node_setting": {
+                                "$ref": "#/components/schemas/GlobalNodeSetting"
+                            }
+                        }
+                    }
+                ]
+            },
+            "DisplayPosition": {
+                "type": "object",
+                "properties": {
+                    "x": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "y": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "EndNode": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Node"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": "string"
+                            },
+                            "type": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            },
+                            "display_position": {
+                                "$ref": "#/components/schemas/DisplayPosition"
+                            },
+                            "speak_during_execution": {
+                                "type": "boolean"
+                            },
+                            "instruction": {
+                                "oneOf": [
+                                    {
+                                        "$ref": "#/components/schemas/PromptInstruction"
+                                    },
+                                    {
+                                        "$ref": "#/components/schemas/StaticTextInstruction"
+                                    }
+                                ]
+                            },
+                            "global_node_setting": {
+                                "$ref": "#/components/schemas/GlobalNodeSetting"
+                            }
+                        }
+                    }
+                ]
+            },
+            "FinetuneExample": {
+                "type": "object",
+                "properties": {
+                    "transcript": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TranscriptMessage"
+                        }
+                    }
+                }
+            },
+            "FlowEdge": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "transition_condition": {
+                        "$ref": "#/components/schemas/TransitionCondition"
+                    },
+                    "destination_node_id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "FlowTool": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "GlobalNodeSetting": {
+                "type": "object",
+                "properties": {
+                    "condition": {
+                        "type": "string"
+                    },
+                    "positive_finetune_examples": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinetuneExample"
+                        }
+                    },
+                    "negative_finetune_examples": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FinetuneExample"
+                        }
+                    }
+                }
+            },
+            "ModelChoice": {},
+            "Node": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "NodeInstruction": {
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "PromptInstruction": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/NodeInstruction"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "text": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "StaticTextInstruction": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/NodeInstruction"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "type": "string"
+                            },
+                            "text": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ]
+            },
+            "TranscriptMessage": {
+                "type": "object",
+                "properties": {
+                    "role": {
+                        "type": "string"
+                    },
+                    "content": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TransitionCondition": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    },
+                    "prompt": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ConversationFlowResponse": {
+                "type": "object",
+                "properties": {
+                    "conversation_flow_id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "model_choice": {
+                        "$ref": "#/components/schemas/ModelChoice"
+                    },
+                    "model_temperature": {
+                        "type": "number",
+                        "format": "double"
+                    },
+                    "tool_call_strict_mode": {
+                        "type": "boolean"
+                    },
+                    "knowledge_base_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "kb_config": {
+                        "$ref": "#/components/schemas/KbConfig"
+                    },
+                    "start_speaker": {
+                        "type": "string"
+                    },
+                    "begin_after_user_silence_ms": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "global_prompt": {
+                        "type": "string"
+                    },
+                    "tools": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/CheckAvailabilityCalTool"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/CustomTool"
+                                }
+                            ]
+                        }
+                    },
+                    "components": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Component"
+                        }
+                    },
+                    "start_node_id": {
+                        "type": "string"
+                    },
+                    "default_dynamic_variables": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "begin_tag_display_position": {
+                        "$ref": "#/components/schemas/DisplayPosition"
+                    },
+                    "mcps": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Mcp"
+                        }
+                    },
+                    "is_transfer_llm": {
+                        "type": "boolean"
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/ConversationNode"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EndNode"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "ChatAgentDto": {
+                "type": "object",
+                "properties": {
+                    "agentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "agentName": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "lastUpdatedTimestamp": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "isPublished": {
+                        "type": "boolean"
+                    },
+                    "responseEngine": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ConversationFlowRefDto"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ReacherrLlmRefDto"
+                            }
+                        ]
+                    },
+                    "autoCloseMessage": {
+                        "type": "string"
+                    },
+                    "endChatAfterSilenceMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "language": {
+                        "type": "string",
+                        "enum": [
+                            "bn",
+                            "de",
+                            "en",
+                            "es",
+                            "fr",
+                            "gu",
+                            "hi",
+                            "it",
+                            "ja",
+                            "kn",
+                            "ko",
+                            "ml",
+                            "mr",
+                            "pa",
+                            "pt",
+                            "ta",
+                            "te",
+                            "zh"
+                        ]
+                    },
+                    "webhookUrl": {
+                        "type": "string"
+                    },
+                    "webhookTimeoutMs": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "postChatAnalysisData": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/BooleanPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/EnumPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/NumberPostCallField"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/StringPostCallField"
+                                }
+                            ]
+                        }
+                    },
+                    "postChatAnalysisModel": {
+                        "type": "string"
+                    },
+                    "analysisSuccessfulPrompt": {
+                        "type": "string"
+                    },
+                    "analysisSummaryPrompt": {
+                        "type": "string"
+                    },
+                    "piiConfig": {
+                        "$ref": "#/components/schemas/PiiConfig"
+                    }
+                }
+            },
+            "SignUpRequest": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "username": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 3
+                    },
+                    "password": {
+                        "type": "string",
+                        "maxLength": 40,
+                        "minLength": 6
+                    },
+                    "roleType": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "MEMBER",
+                            "VIEWER"
+                        ]
+                    }
+                },
+                "required": [
+                    "name",
+                    "password",
+                    "username"
+                ]
+            },
+            "LoginRequest": {
+                "type": "object",
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 1
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "password",
+                    "username"
+                ]
+            },
+            "RefreshTokenRequest": {
+                "type": "object",
+                "properties": {
+                    "refreshToken": {
+                        "type": "string",
+                        "minLength": 1
+                    }
+                },
+                "required": [
+                    "refreshToken"
+                ]
+            },
+            "TemplateDto": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "minLength": 1
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "agentType": {
+                        "type": "string",
+                        "enum": [
+                            "single-prompt",
+                            "conversational-flow",
+                            "custom"
+                        ]
+                    }
+                },
+                "required": [
+                    "description",
+                    "id",
+                    "name"
+                ]
+            },
+            "AgentDashBoardDto": {
+                "type": "object",
+                "properties": {
+                    "agentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "agentName": {
+                        "type": "string"
+                    },
+                    "agentVersion": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "lastUpdatedAt": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "phoneNumbers": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "agentType": {
+                        "type": "string",
+                        "enum": [
+                            "single-prompt",
+                            "conversational-flow",
+                            "custom"
+                        ]
+                    },
+                    "responseEngineRefDto": {
+                        "oneOf": [
+                            {
+                                "$ref": "#/components/schemas/ConversationFlowRefDto"
+                            },
+                            {
+                                "$ref": "#/components/schemas/ReacherrLlmRefDto"
+                            }
+                        ]
+                    },
+                    "voiceAvatarUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AgentConversationConfigResponse": {
+                "type": "object",
+                "properties": {
+                    "llm": {
+                        "$ref": "#/components/schemas/LlmOptions"
+                    },
+                    "voice": {
+                        "$ref": "#/components/schemas/VoiceOptions"
+                    }
+                }
+            },
+            "Language": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LlmModel": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Model"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "provider": {
+                                "type": "string"
+                            },
+                            "displayName": {
+                                "type": "string"
+                            },
+                            "modality": {
+                                "type": "string"
+                            },
+                            "configs": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            }
+                        }
+                    }
+                ]
+            },
+            "LlmOptions": {
+                "type": "object",
+                "properties": {
+                    "providers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Provider"
+                        }
+                    }
+                }
+            },
+            "Model": {
+                "discriminator": {
+                    "propertyName": "modality"
+                },
+                "properties": {
+                    "modality": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "modality"
+                ]
+            },
+            "Provider": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "models": {
+                        "type": "array",
+                        "items": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/LlmModel"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/SttModel"
+                                },
+                                {
+                                    "$ref": "#/components/schemas/TtsModel"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "SttModel": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Model"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "displayName": {
+                                "type": "string"
+                            },
+                            "modality": {
+                                "type": "string"
+                            },
+                            "configs": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            },
+                            "languages": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "supportsKeywords": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ]
+            },
+            "TTSVoice": {
+                "type": "object",
+                "properties": {
+                    "voiceId": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "gender": {
+                        "type": "string"
+                    },
+                    "accent": {
+                        "type": "string"
+                    },
+                    "avatarUrl": {
+                        "type": "string"
+                    }
+                }
+            },
+            "TtsModel": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Model"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string"
+                            },
+                            "displayName": {
+                                "type": "string"
+                            },
+                            "modality": {
+                                "type": "string"
+                            },
+                            "configs": {
+                                "type": "object",
+                                "additionalProperties": {}
+                            },
+                            "languages": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "TTSVoices": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/TTSVoice"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "VoiceOptions": {
+                "type": "object",
+                "properties": {
+                    "languages": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Language"
+                        }
+                    },
+                    "providers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Provider"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

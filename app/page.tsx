@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Marquee } from "@/components/ui/marquee";
 import { FeaturesGrid } from "@/components/ui/features-grid";
+import { FeatureCard } from "@/components/layout/feature-card";
 import { SiteNavbar } from "@/components/layout/site-navbar";
 import { HaveQuestionsSection } from "@/components/layout/have-questions";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -19,6 +20,7 @@ import { ToolsShowcase } from "@/components/home/tools-showcase";
 import { CategoryShowcase } from "@/components/home/category-showcase";
 import { TestimonialSection } from "@/components/home/testimonial-section";
 import { ProSupportSection } from "@/components/home/pro-support";
+import { cn } from "@/lib/utils";
 
 const brandLogos = [
   { name: "Doordash", src: "/images/brands/doordash-logo.svg" },
