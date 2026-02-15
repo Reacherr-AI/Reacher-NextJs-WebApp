@@ -54,8 +54,10 @@ export default function OAuthCallbackClient() {
           } else {
             if (target) {
               params.set('phone', target);
+              router.replace(`/verify-phone?${params.toString()}`);
+            } else {
+              router.replace(`/add-phone?${params.toString()}`);
             }
-            router.replace(`/verify-phone?${params.toString()}`);
           }
           return;
         }

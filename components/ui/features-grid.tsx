@@ -44,12 +44,12 @@ export function FeaturesGrid({
           >
             <div className="relative aspect-[16/9] overflow-hidden rounded-[18px] border border-white/10 bg-white/5">
               <div
-                className="absolute inset-0"
-                style={{
-                  backgroundImage: `linear-gradient(145deg, rgba(186,176,225,0.72) 0%, rgba(110,102,200,0.66) 48%, rgba(57,60,158,0.9) 100%), url('${gradientSrc}')`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                }}
+                className="absolute inset-0 overflow-hidden  bg-gradient-to-br from-[#5b50f6] to-[#7a4bf1]"
+                // style={{
+                //   backgroundImage: `linear-gradient(145deg, rgba(186,176,225,0.72) 0%, rgba(110,102,200,0.66) 48%, rgba(57,60,158,0.9) 100%), url('${gradientSrc}')`,
+                //   backgroundSize: "cover",
+                //   backgroundPosition: "center",
+                // }}
               />
               <div className="absolute inset-0 opacity-25 mix-blend-screen">
                 <Image
