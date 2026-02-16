@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bot, BookOpen, LayoutDashboard } from 'lucide-react';
+import { Bot, BookOpen, LayoutDashboard, Phone } from 'lucide-react';
 
 import {
   Sidebar,
@@ -29,6 +29,11 @@ const navItems = [
     href: '/knowledge-base',
     label: 'Knowledge Base',
     icon: BookOpen,
+  },
+  {
+    href: '/phone-numbers',
+    label: 'Phone Numbers',
+    icon: Phone,
   },
 ] as const;
 

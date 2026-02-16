@@ -5,8 +5,6 @@ import type { ReacherrLlmDto, VoiceAgentDto } from '@/types';
 import {
   conversationConfigStoredResults,
   getLLMProviders,
-  getSTTProvidersWithLanguages,
-  getTTSProvidersWithLanguages,
 } from '../_lib/conversation-config';
 import { KNOWN_POST_CALL_FIELD_TYPES, type KnownPostCallFieldType, type PostCallField } from '@/types';
 import {
@@ -18,7 +16,6 @@ import {
   Code,
   Hash,
   ListChecks,
-  Mic,
   PhoneCall,
   Pencil,
   Plus,
@@ -32,17 +29,17 @@ import {
 } from 'lucide-react';
 
 type VoiceMailActionType = NonNullable<
-  NonNullable<VoiceAgentDto['voiceMailDetection']>['action']
->['type'];
+  NonNullable<VoiceAgentDto['voiceMailOption']>['voiceMailOptionType']
+>;
 
 type PiiModeType = NonNullable<NonNullable<VoiceAgentDto['piiConfig']>['mode']>;
 
 type PiiCategoriesType = NonNullable<NonNullable<VoiceAgentDto['piiConfig']>['categories']>;
+type PiiCategoryType = PiiCategoriesType[number];
 
 type SectionId =
   | 'identity'
   | 'call'
-  | 'speech'
   | 'webhooks'
   | 'voicemail'
   | 'security'
@@ -113,6 +110,214 @@ const stringifyStable = (value: unknown): string => {
   return JSON.stringify(normalize(value));
 };
 
+const cleanStringList = (value: unknown): string[] | undefined => {
+  if (!Array.isArray(value)) return undefined;
+  const next = value
+    .map((v) => (typeof v === 'string' ? v.trim() : ''))
+    .filter((v) => v.length > 0);
+  return next.length > 0 ? next : undefined;
+};
+
+const sanitizePostCallFieldForPayload = (field: PostCallField): PostCallField | null => {
+  const type = typeof field.type === 'string' ? field.type.trim().toLowerCase() : '';
+  const name = typeof field.name === 'string' ? field.name.trim() : '';
+  const description = typeof field.description === 'string' ? field.description.trim() : '';
+  if (!name || !description) return null;
+
+  if (type === 'string') {
+    const examples = cleanStringList((field as { examples?: unknown }).examples);
+    if (!examples) return null;
+    return { type, name, description, examples };
+  }
+  if (type === 'enum') {
+    const choices = cleanStringList((field as { choices?: unknown }).choices);
+    if (!choices) return null;
+    return { type, name, description, choices };
+  }
+  if (type === 'number' || type === 'boolean') {
+    return { type, name, description };
+  }
+  return null;
+};
+
+const normalizeUserDtmfOption = (value: unknown): VoiceAgentDto['userDtmfOption'] => {
+  if (!isRecord(value)) return undefined;
+  const rawDigit =
+    typeof value.digit_limit === 'number'
+      ? value.digit_limit
+      : typeof value.digitLimit === 'number'
+        ? value.digitLimit
+        : undefined;
+  const rawTermination =
+    typeof value.termination_key === 'string'
+      ? value.termination_key
+      : typeof value.terminationKey === 'string'
+        ? value.terminationKey
+        : undefined;
+  const rawTimeout =
+    typeof value.timeout_ms === 'number'
+      ? value.timeout_ms
+      : typeof value.timeoutMs === 'number'
+        ? value.timeoutMs
+        : undefined;
+
+  const normalized = {
+    digit_limit: rawDigit,
+    termination_key: rawTermination,
+    timeout_ms: rawTimeout,
+  };
+
+  return normalized.digit_limit !== undefined ||
+    normalized.termination_key !== undefined ||
+    normalized.timeout_ms !== undefined
+    ? normalized
+    : undefined;
+};
+
+const validateUserDtmfOption = (
+  enabled: boolean | undefined,
+  option: VoiceAgentDto['userDtmfOption']
+): string | null => {
+  if (!enabled || !option) return null;
+  if (option.digit_limit !== undefined && (option.digit_limit < 1 || option.digit_limit > 50)) {
+    return 'Digit Limit must be between 1 and 50.';
+  }
+  if (option.timeout_ms !== undefined && (option.timeout_ms < 1000 || option.timeout_ms > 15000)) {
+    return 'Timeout (ms) must be between 1000 and 15000.';
+  }
+  if (
+    option.termination_key !== undefined &&
+    option.termination_key !== '' &&
+    !/^[0-9#*]$/.test(option.termination_key)
+  ) {
+    return 'Termination Key must be a single character: 0-9, #, or *.';
+  }
+  return null;
+};
+
+const normalizeVoicemailOption = (agent: VoiceAgentDto): VoiceAgentDto => {
+  const legacyAction = (agent as unknown as { voiceMailDetection?: { action?: { type?: string; text?: string; prompt?: string } } })
+    .voiceMailDetection?.action;
+
+  if (agent.voiceMailOption || !legacyAction?.type) return agent;
+
+  return {
+    ...agent,
+    voiceMailOption: {
+      voiceMailOptionType: legacyAction.type as VoiceMailActionType,
+      text: legacyAction.text ?? legacyAction.prompt,
+    },
+  };
+};
+
+const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
+  const withVoicemail = normalizeVoicemailOption(agent);
+  const languageEnum = withVoicemail.languageEnum ?? withVoicemail.language;
+  const userDtmfOption = normalizeUserDtmfOption(
+    withVoicemail.userDtmfOption ?? withVoicemail.userDtmfOptions
+  );
+  const normalizedPiiMode =
+    withVoicemail.piiConfig?.mode &&
+    String(withVoicemail.piiConfig.mode).trim().toLowerCase() === 'post_call'
+      ? ('POST_CALL' as PiiModeType)
+      : withVoicemail.piiConfig?.mode;
+  const rawPostCall = withVoicemail.postCallAnalysisData as unknown;
+  const normalizedPostCall = (Array.isArray(rawPostCall)
+    ? rawPostCall
+    : isRecord(rawPostCall) && Array.isArray(rawPostCall.data)
+      ? rawPostCall.data
+      : []) as PostCallField[];
+
+  return {
+    ...withVoicemail,
+    languageEnum,
+    language: languageEnum,
+    userDtmfOption,
+    userDtmfOptions: userDtmfOption,
+    piiConfig: withVoicemail.piiConfig
+      ? {
+        ...withVoicemail.piiConfig,
+        mode: normalizedPiiMode as PiiModeType,
+      }
+      : undefined,
+    postCallAnalysisData: normalizedPostCall,
+    ttsConfig:
+      withVoicemail.ttsConfig ??
+      (withVoicemail.voiceId || withVoicemail.voiceModel
+        ? {
+          provider: '',
+          model: withVoicemail.voiceModel ?? '',
+          voiceId: withVoicemail.voiceId ?? '',
+        }
+        : undefined),
+  };
+};
+
+const buildAgentPayload = (draft: VoiceAgentDto): VoiceAgentDto => {
+  const payload = normalizeVoicemailOption(draft) as VoiceAgentDto & {
+    userDtmfOptions?: unknown;
+    language?: unknown;
+    voiceMailDetection?: unknown;
+    postCallAnalysisData?: unknown;
+  };
+
+  if (!payload.languageEnum && typeof payload.language === 'string') {
+    payload.languageEnum = payload.language as VoiceAgentDto['languageEnum'];
+  }
+
+  if (!payload.userDtmfOption && payload.userDtmfOptions) {
+    payload.userDtmfOption = payload.userDtmfOptions as VoiceAgentDto['userDtmfOption'];
+  }
+  payload.userDtmfOption = normalizeUserDtmfOption(payload.userDtmfOption);
+
+  if (!payload.allowUserDtmf) {
+    payload.userDtmfOption = undefined;
+  } else if (payload.userDtmfOption) {
+    payload.userDtmfOption = {
+      digitLimit: payload.userDtmfOption.digit_limit,
+      terminationKey: payload.userDtmfOption.termination_key,
+      timeoutMs: payload.userDtmfOption.timeout_ms,
+    };
+  }
+
+  if (payload.ttsConfig?.voiceId) payload.voiceId = payload.ttsConfig.voiceId;
+  if (payload.ttsConfig?.model) payload.voiceModel = payload.ttsConfig.model;
+
+  if (payload.voiceMailOption?.voiceMailOptionType === 'hangup') {
+    payload.voiceMailOption = { voiceMailOptionType: 'hangup' };
+  }
+
+  if (payload.piiConfig?.mode) {
+    const rawMode = String(payload.piiConfig.mode).trim();
+    const normalizedMode = rawMode.toLowerCase() === 'post_call' ? 'POST_CALL' : rawMode;
+    const categories = Array.isArray(payload.piiConfig.categories)
+      ? payload.piiConfig.categories.filter((c) => typeof c === 'string' && c.trim().length > 0)
+      : [];
+    if (categories.length === 0) {
+      payload.piiConfig = undefined;
+    } else {
+    payload.piiConfig = {
+      ...payload.piiConfig,
+      mode: normalizedMode as PiiModeType,
+      categories: categories as PiiCategoriesType,
+    };
+    }
+  }
+
+  if (Array.isArray(payload.postCallAnalysisData)) {
+    const sanitized = payload.postCallAnalysisData
+      .map((field) => sanitizePostCallFieldForPayload(field as PostCallField))
+      .filter((field): field is PostCallField => field !== null);
+    payload.postCallAnalysisData = { data: sanitized };
+  }
+
+  delete payload.userDtmfOptions;
+  delete payload.language;
+  delete payload.voiceMailDetection;
+
+  return payload;
+};
+
 async function patchJson<T>(url: string, body: unknown): Promise<SaveResult<T>> {
   const res = await fetch(url, {
     method: 'PATCH',
@@ -148,23 +353,74 @@ const SECTIONS: {
 }[] = [
     { id: 'identity', label: 'Identity', group: 'agent' },
     { id: 'call', label: 'Call Settings', group: 'agent' },
-    { id: 'speech', label: 'Speech Settings', group: 'agent' },
     { id: 'webhooks', label: 'Webhook Settings', group: 'agent' },
     { id: 'voicemail', label: 'Voicemail', group: 'agent' },
     { id: 'security', label: 'Security & DTMF', group: 'agent' },
     { id: 'postcall', label: 'Post-Call Extraction', group: 'agent' },
-    { id: 'llm_model', label: 'LLM: Model', group: 'llm' },
+    { id: 'llm_model', label: 'LLM: Model', group: 'llm', disabled: true },
     { id: 'llm_kb', label: 'LLM: Knowledge Base', group: 'llm', disabled: true },
     { id: 'llm_tools', label: 'LLM: Tools', group: 'llm', disabled: true },
     { id: 'llm_mcps', label: 'LLM: MCPs', group: 'llm', disabled: true },
     { id: 'raw', label: 'Raw JSON', group: 'advanced' },
   ];
 
-function hasReacherrLlm(agent: VoiceAgentDto): agent is VoiceAgentDto & {
-  responseEngine: { llmId: string };
-} {
+const PII_CATEGORY_GROUPS: Array<{
+  title: string;
+  items: Array<{ value: PiiCategoryType; label: string }>;
+}> = [
+    {
+      title: 'Identity Information',
+      items: [
+        { value: 'PERSON_NAME', label: 'Person Name' },
+        { value: 'DATE_OF_BIRTH', label: 'Date Of Birth' },
+        { value: 'CUSTOMER_ACCOUNT_NUMBER', label: 'Customer Account Number' },
+      ],
+    },
+    {
+      title: 'Contact Information',
+      items: [
+        { value: 'ADDRESS', label: 'Address' },
+        { value: 'EMAIL', label: 'Email' },
+        { value: 'PHONE_NUMBER', label: 'Phone Number' },
+      ],
+    },
+    {
+      title: 'Government Identifiers',
+      items: [
+        { value: 'SSN', label: 'SSN' },
+        { value: 'PASSPORT', label: 'Passport' },
+        { value: 'DRIVER_LICENSE', label: 'Driver License' },
+      ],
+    },
+    {
+      title: 'Financial Information',
+      items: [
+        { value: 'CREDIT_CARD', label: 'Credit Card' },
+        { value: 'BANK_ACCOUNT', label: 'Bank Account' },
+      ],
+    },
+    {
+      title: 'Security Credentials',
+      items: [
+        { value: 'PASSWORD', label: 'Password' },
+        { value: 'PIN', label: 'Pin' },
+      ],
+    },
+    {
+      title: 'Health Information',
+      items: [{ value: 'MEDICAL_ID', label: 'Medical Id' }],
+    },
+  ];
+
+function resolveReacherrLlmId(agent: VoiceAgentDto): string | null {
   const re = agent.responseEngine as unknown;
-  return isRecord(re) && typeof re.llmId === 'string' && re.llmId.trim().length > 0;
+  if (!isRecord(re)) return null;
+  if (typeof re.type === 'string' && re.type.trim().length > 0 && re.type !== 'reacherr-llm') {
+    return null;
+  }
+  if (typeof re.llmId === 'string' && re.llmId.trim().length > 0) return re.llmId;
+  if (typeof re.engineId === 'string' && re.engineId.trim().length > 0) return re.engineId;
+  return null;
 }
 
 export function AgentConfigEditor({
@@ -176,22 +432,14 @@ export function AgentConfigEditor({
 }) {
   const [active, setActive] = React.useState<SectionId>('identity');
 
-  const [agentDraft, setAgentDraft] = React.useState<VoiceAgentDto>(initialAgent);
+  const [agentDraft, setAgentDraft] = React.useState<VoiceAgentDto>(normalizeAgentForEditor(initialAgent));
   const [llmDraft, setLlmDraft] = React.useState<ReacherrLlmDto | null>(initialLlm);
 
   const llmProviderOptions = React.useMemo(() => {
     return getLLMProviders(conversationConfigStoredResults);
   }, []);
 
-  const sttProviderOptions = React.useMemo(() => {
-    return getSTTProvidersWithLanguages(conversationConfigStoredResults);
-  }, []);
-
-  const ttsProviderOptions = React.useMemo(() => {
-    return getTTSProvidersWithLanguages(conversationConfigStoredResults);
-  }, []);
-
-  const [baselineAgent, setBaselineAgent] = React.useState(initialAgent);
+  const [baselineAgent, setBaselineAgent] = React.useState(normalizeAgentForEditor(initialAgent));
   const [baselineLlm, setBaselineLlm] = React.useState(initialLlm);
 
   const [saving, setSaving] = React.useState<'idle' | 'agent' | 'llm' | 'all'>('idle');
@@ -199,6 +447,7 @@ export function AgentConfigEditor({
   const [lastSavedAt, setLastSavedAt] = React.useState<number | null>(null);
 
   const [postCallEditorOpen, setPostCallEditorOpen] = React.useState(false);
+  const [piiEditorOpen, setPiiEditorOpen] = React.useState(false);
   const [editingPostCallIndex, setEditingPostCallIndex] = React.useState<number | null>(null);
   type PostCallDraft = PostCallField & { choices?: string[]; examples?: string[] };
   const [postCallDraft, setPostCallDraft] = React.useState<PostCallDraft>({
@@ -211,115 +460,13 @@ export function AgentConfigEditor({
   const llmDirty =
     llmDraft && baselineLlm ? stringifyStable(llmDraft) !== stringifyStable(baselineLlm) : false;
 
-  const llmId = hasReacherrLlm(agentDraft) ? agentDraft.responseEngine.llmId : null;
+  const llmId = resolveReacherrLlmId(agentDraft);
 
   // Initialize dropdowns: normalize backend values (label vs slug).
   const didInitRef = React.useRef(false);
   React.useEffect(() => {
     if (didInitRef.current) return;
     didInitRef.current = true;
-
-    setAgentDraft((prev) => {
-      let next = prev;
-
-      // STT normalize
-      if (prev.sttConfig?.provider && sttProviderOptions.length > 0) {
-        const providers = sttProviderOptions.map((p) => ({
-          label: p.label,
-          value: p.value,
-          models: p.models,
-        }));
-        const providerOpt =
-          findByValueOrLabel(providers, prev.sttConfig.provider) ??
-          providers.find((p) => p.value === prev.sttConfig?.provider) ??
-          null;
-
-        if (providerOpt) {
-          const models = providerOpt.models ?? [];
-          const modelOpt =
-            prev.sttConfig?.model && prev.sttConfig.model.trim().length > 0
-              ? findByValueOrLabel(
-                models.map((m) => ({ label: m.label, value: m.value })),
-                prev.sttConfig.model
-              ) ??
-              models.find((m) => m.value === prev.sttConfig?.model) ??
-              null
-              : null;
-
-          const normalizedProvider = providerOpt.value;
-          const normalizedModel = modelOpt?.value ?? prev.sttConfig.model ?? '';
-
-          if (
-            normalizedProvider !== (prev.sttConfig?.provider ?? '') ||
-            normalizedModel !== (prev.sttConfig?.model ?? '')
-          ) {
-            next = {
-              ...next,
-              sttConfig: {
-                provider: normalizedProvider,
-                model: normalizedModel,
-                settings: prev.sttConfig?.settings,
-              },
-            };
-          }
-        }
-      }
-
-      // TTS normalize (keep custom voiceId if it's not in the catalog)
-      if (prev.ttsConfig?.provider && ttsProviderOptions.length > 0) {
-        const providers = ttsProviderOptions.map((p) => ({
-          label: p.label,
-          value: p.value,
-          models: p.models,
-        }));
-        const providerOpt =
-          findByValueOrLabel(providers, prev.ttsConfig.provider) ??
-          providers.find((p) => p.value === prev.ttsConfig?.provider) ??
-          null;
-
-        if (providerOpt) {
-          const models = providerOpt.models ?? [];
-          const modelOpt =
-            prev.ttsConfig?.model && prev.ttsConfig.model.trim().length > 0
-              ? findByValueOrLabel(
-                models.map((m) => ({ label: m.label, value: m.value })),
-                prev.ttsConfig.model
-              ) ??
-              models.find((m) => m.value === prev.ttsConfig?.model) ??
-              null
-              : null;
-
-          const normalizedProvider = providerOpt.value;
-          const normalizedModel = modelOpt?.value ?? prev.ttsConfig.model ?? '';
-
-          const voices = models.find((m) => m.value === normalizedModel)?.voices ?? [];
-          const currentVoiceId = prev.ttsConfig?.voiceId ?? '';
-          const normalizedVoiceId =
-            currentVoiceId && voices.some((v) => v.voiceId === currentVoiceId)
-              ? currentVoiceId
-              : currentVoiceId;
-
-          if (
-            normalizedProvider !== (prev.ttsConfig?.provider ?? '') ||
-            normalizedModel !== (prev.ttsConfig?.model ?? '') ||
-            normalizedVoiceId !== (prev.ttsConfig?.voiceId ?? '')
-          ) {
-            next = {
-              ...next,
-              ttsConfig: {
-                provider: normalizedProvider,
-                model: normalizedModel,
-                voiceId: normalizedVoiceId,
-                avatarUrl: prev.ttsConfig?.avatarUrl,
-                settings: prev.ttsConfig?.settings,
-              },
-            };
-          }
-        }
-      }
-
-      return next;
-    });
 
     setLlmDraft((prev) => {
       if (!prev) return prev;
@@ -362,21 +509,27 @@ export function AgentConfigEditor({
 
       return prev;
     });
-  }, [llmProviderOptions, sttProviderOptions, ttsProviderOptions]);
+  }, [llmProviderOptions]);
 
   const saveAgent = async () => {
+    const dtmfError = validateUserDtmfOption(agentDraft.allowUserDtmf, agentDraft.userDtmfOption);
+    if (dtmfError) {
+      setError(dtmfError);
+      return;
+    }
     setSaving('agent');
     setError(null);
     try {
       const agentId = agentDraft.agentId;
       const url = `/api/agents/update${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ''}`;
-      const result = await patchJson<VoiceAgentDto>(url, agentDraft);
+      const result = await patchJson<VoiceAgentDto>(url, buildAgentPayload(agentDraft));
       if (!result.ok) {
         setError(result.message);
         return;
       }
-      setBaselineAgent(result.data);
-      setAgentDraft(result.data);
+      const normalized = normalizeAgentForEditor(result.data);
+      setBaselineAgent(normalized);
+      setAgentDraft(normalized);
       setLastSavedAt(Date.now());
     } finally {
       setSaving('idle');
@@ -408,19 +561,26 @@ export function AgentConfigEditor({
     const needsLlm = llmDirty;
     if (!needsAgent && !needsLlm) return;
 
+    const dtmfError = validateUserDtmfOption(agentDraft.allowUserDtmf, agentDraft.userDtmfOption);
+    if (dtmfError) {
+      setError(dtmfError);
+      return;
+    }
+
     setSaving('all');
     setError(null);
     try {
       if (needsAgent) {
         const agentId = agentDraft.agentId;
         const url = `/api/agents/update${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ''}`;
-        const agentResult = await patchJson<VoiceAgentDto>(url, agentDraft);
+        const agentResult = await patchJson<VoiceAgentDto>(url, buildAgentPayload(agentDraft));
         if (!agentResult.ok) {
           setError(agentResult.message);
           return;
         }
-        setBaselineAgent(agentResult.data);
-        setAgentDraft(agentResult.data);
+        const normalized = normalizeAgentForEditor(agentResult.data);
+        setBaselineAgent(normalized);
+        setAgentDraft(normalized);
       }
 
       if (needsLlm && llmDraft) {
@@ -449,8 +609,26 @@ export function AgentConfigEditor({
   };
 
   const llmSectionsEnabled = Boolean(llmDraft) && Boolean(llmId);
+  const piiCategories = (agentDraft.piiConfig?.categories ?? []) as PiiCategoriesType;
 
   const postCallFields = (agentDraft.postCallAnalysisData ?? []) as PostCallField[];
+
+  const togglePiiCategory = (category: PiiCategoryType, checked: boolean) => {
+    setAgentDraft((prev) => {
+      const current = new Set((prev.piiConfig?.categories ?? []) as string[]);
+      if (checked) current.add(category);
+      else current.delete(category);
+      const nextCategories = Array.from(current) as PiiCategoriesType;
+
+      return {
+        ...prev,
+        piiConfig: {
+          mode: 'POST_CALL' as PiiModeType,
+          categories: nextCategories,
+        },
+      };
+    });
+  };
 
   const openCreatePostCallField = () => {
     setEditingPostCallIndex(null);
@@ -475,15 +653,54 @@ export function AgentConfigEditor({
   };
 
   const savePostCallField = () => {
-    const cleaned: PostCallDraft = {
-      ...postCallDraft,
-      type: typeof postCallDraft.type === 'string' ? postCallDraft.type.trim() : 'string',
-      name: typeof postCallDraft.name === 'string' ? postCallDraft.name.trim() : postCallDraft.name,
-      description:
-        typeof postCallDraft.description === 'string'
-          ? postCallDraft.description.trim()
-          : postCallDraft.description,
-    };
+    const cleanedType =
+      typeof postCallDraft.type === 'string' ? postCallDraft.type.trim().toLowerCase() : 'string';
+    const cleanedName =
+      typeof postCallDraft.name === 'string' ? postCallDraft.name.trim() : '';
+    const cleanedDescription =
+      typeof postCallDraft.description === 'string' ? postCallDraft.description.trim() : '';
+    if (!cleanedName || !cleanedDescription) {
+      setError('Post-call field requires both name and description.');
+      return;
+    }
+
+    let cleaned: PostCallDraft | null = null;
+    if (cleanedType === 'string') {
+      const examples = cleanStringList(postCallDraft.examples);
+      if (!examples) {
+        setError('String post-call field requires at least one example.');
+        return;
+      }
+      cleaned = {
+        type: 'string',
+        name: cleanedName,
+        description: cleanedDescription,
+        examples,
+      };
+    } else if (cleanedType === 'enum') {
+      const choices = cleanStringList(postCallDraft.choices);
+      if (!choices) {
+        setError('Enum post-call field requires at least one choice.');
+        return;
+      }
+      cleaned = {
+        type: 'enum',
+        name: cleanedName,
+        description: cleanedDescription,
+        choices,
+      };
+    } else if (cleanedType === 'number' || cleanedType === 'boolean') {
+      cleaned = {
+        type: cleanedType,
+        name: cleanedName,
+        description: cleanedDescription,
+      };
+    } else {
+      setError(`Unsupported post-call field type: ${cleanedType}`);
+      return;
+    }
+
+    setError(null);
 
     setAgentDraft((prev) => {
       const next = Array.isArray(prev.postCallAnalysisData) ? [...prev.postCallAnalysisData] : [];
@@ -515,8 +732,6 @@ export function AgentConfigEditor({
         return <User className="size-4 text-white/60" />;
       case 'call':
         return <PhoneCall className="size-4 text-white/60" />;
-      case 'speech':
-        return <Mic className="size-4 text-white/60" />;
       case 'webhooks':
         return <Webhook className="size-4 text-white/60" />;
       case 'voicemail':
@@ -614,9 +829,13 @@ export function AgentConfigEditor({
                       Language
                     </span>
                     <input
-                      value={(agentDraft.language as unknown as string) ?? ''}
+                      value={(agentDraft.languageEnum as unknown as string) ?? ''}
                       onChange={(e) =>
-                        setAgentDraft((prev) => ({ ...prev, language: e.target.value as never }))
+                        setAgentDraft((prev) => ({
+                          ...prev,
+                          languageEnum: e.target.value as never,
+                          language: e.target.value as never,
+                        }))
                       }
                       className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
                       placeholder="en"
@@ -673,22 +892,6 @@ export function AgentConfigEditor({
                     </label>
                     <label className="grid gap-2">
                       <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        No Response Timeout (ms)
-                      </span>
-                      <input
-                        inputMode="numeric"
-                        value={agentDraft.noResponseTimeoutMs ?? ''}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            noResponseTimeoutMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
                         Webhook Timeout (ms)
                       </span>
                       <input
@@ -698,257 +901,6 @@ export function AgentConfigEditor({
                           setAgentDraft((prev) => ({
                             ...prev,
                             webhookTimeoutMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={saveAgent}
-                      disabled={saving !== 'idle' || !agentDirty}
-                      className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {saving === 'agent' ? 'Saving agent…' : 'Save agent'}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-
-              {active === 'speech' ? (
-                <div className="grid gap-5">
-                  {(() => {
-                    const sttMissing =
-                      !agentDraft.sttConfig?.provider || !agentDraft.sttConfig?.model;
-                    const ttsMissing =
-                      !agentDraft.ttsConfig?.provider ||
-                      !agentDraft.ttsConfig?.model ||
-                      !agentDraft.ttsConfig?.voiceId;
-                    if (!sttMissing && !ttsMissing) return null;
-                    return (
-                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4 text-sm text-amber-100">
-                        <p className="font-semibold text-amber-50">Speech configuration required</p>
-                        <p className="mt-1 text-amber-100/80">
-                          {sttMissing && ttsMissing
-                            ? 'Select your STT provider/model and TTS provider/model/voice to continue.'
-                            : sttMissing
-                              ? 'Select your STT provider and model.'
-                              : 'Select your TTS provider, model, and voice.'}
-                        </p>
-                      </div>
-                    );
-                  })()}
-
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        STT Provider
-                      </span>
-                      <select
-                        value={agentDraft.sttConfig?.provider ?? ''}
-                        onChange={(e) => {
-                          const provider = e.target.value;
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            sttConfig: {
-                              provider,
-                              model: '',
-                              settings: prev.sttConfig?.settings,
-                            },
-                          }));
-                        }}
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      >
-                        <option value="">Select STT provider</option>
-                        {ensureOption(
-                          sttProviderOptions.map((p) => ({ label: p.label, value: p.value })),
-                          agentDraft.sttConfig?.provider,
-                          'Custom'
-                        ).map((opt) => (
-                          <option key={`stt-provider-${opt.value}`} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        STT Model
-                      </span>
-                      <select
-                        value={agentDraft.sttConfig?.model ?? ''}
-                        onChange={(e) => {
-                          const model = e.target.value;
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            sttConfig: {
-                              provider: prev.sttConfig?.provider ?? '',
-                              model,
-                              settings: prev.sttConfig?.settings,
-                            },
-                          }));
-                        }}
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                        disabled={!agentDraft.sttConfig?.provider}
-                      >
-                        <option value="">Select STT model</option>
-                        {(() => {
-                          const provider = agentDraft.sttConfig?.provider ?? '';
-                          const models =
-                            sttProviderOptions.find((p) => p.value === provider)?.models ?? [];
-                          const modelOptions = ensureOption(
-                            models.map((m) => ({ label: m.label, value: m.value })),
-                            agentDraft.sttConfig?.model,
-                            'Custom'
-                          );
-                          return modelOptions.map((opt) => (
-                            <option key={`stt-model-${opt.value}`} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ));
-                        })()}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        TTS Provider
-                      </span>
-                      <select
-                        value={agentDraft.ttsConfig?.provider ?? ''}
-                        onChange={(e) => {
-                          const provider = e.target.value;
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            ttsConfig: {
-                              provider,
-                              model: '',
-                              voiceId: '',
-                              avatarUrl: prev.ttsConfig?.avatarUrl,
-                              settings: prev.ttsConfig?.settings,
-                            },
-                          }));
-                        }}
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      >
-                        <option value="">Select TTS provider</option>
-                        {ensureOption(
-                          ttsProviderOptions.map((p) => ({ label: p.label, value: p.value })),
-                          agentDraft.ttsConfig?.provider,
-                          'Custom'
-                        ).map((opt) => (
-                          <option key={`tts-provider-${opt.value}`} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        TTS Model
-                      </span>
-                      <select
-                        value={agentDraft.ttsConfig?.model ?? ''}
-                        onChange={(e) => {
-                          const model = e.target.value;
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            ttsConfig: {
-                              provider: prev.ttsConfig?.provider ?? '',
-                              model,
-                              voiceId: '',
-                              avatarUrl: prev.ttsConfig?.avatarUrl,
-                              settings: prev.ttsConfig?.settings,
-                            },
-                          }));
-                        }}
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                        disabled={!agentDraft.ttsConfig?.provider}
-                      >
-                        <option value="">Select TTS model</option>
-                        {(() => {
-                          const provider = agentDraft.ttsConfig?.provider ?? '';
-                          const models =
-                            ttsProviderOptions.find((p) => p.value === provider)?.models ?? [];
-                          const modelOptions = ensureOption(
-                            models.map((m) => ({ label: m.label, value: m.value })),
-                            agentDraft.ttsConfig?.model,
-                            'Custom'
-                          );
-                          return modelOptions.map((opt) => (
-                            <option key={`tts-model-${opt.value}`} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ));
-                        })()}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        TTS Voice ID
-                      </span>
-                      <select
-                        value={agentDraft.ttsConfig?.voiceId ?? ''}
-                        onChange={(e) => {
-                          const voiceId = e.target.value;
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            ttsConfig: {
-                              provider: prev.ttsConfig?.provider ?? '',
-                              model: prev.ttsConfig?.model ?? '',
-                              voiceId,
-                              avatarUrl: prev.ttsConfig?.avatarUrl,
-                              settings: prev.ttsConfig?.settings,
-                            },
-                          }));
-                        }}
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                        disabled={!agentDraft.ttsConfig?.provider || !agentDraft.ttsConfig?.model}
-                      >
-                        <option value="">Select a voice</option>
-                        {(() => {
-                          const provider = agentDraft.ttsConfig?.provider ?? '';
-                          const model = agentDraft.ttsConfig?.model ?? '';
-                          const models =
-                            ttsProviderOptions.find((p) => p.value === provider)?.models ?? [];
-                          const voices = models.find((m) => m.value === model)?.voices ?? [];
-                          const options = ensureOption(
-                            voices.map((v) => ({ label: v.displayName, value: v.voiceId })),
-                            agentDraft.ttsConfig?.voiceId,
-                            'Custom'
-                          );
-                          return options.map((opt) => (
-                            <option key={`tts-voice-${opt.value}`} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ));
-                        })()}
-                      </select>
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        Voice Avatar URL
-                      </span>
-                      <input
-                        value={agentDraft.ttsConfig?.avatarUrl ?? ''}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            ttsConfig: {
-                              provider: prev.ttsConfig?.provider ?? '',
-                              model: prev.ttsConfig?.model ?? '',
-                              voiceId: prev.ttsConfig?.voiceId ?? '',
-                              avatarUrl: e.target.value,
-                              settings: prev.ttsConfig?.settings,
-                            },
                           }))
                         }
                         className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
@@ -1036,22 +988,51 @@ export function AgentConfigEditor({
                     <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
                       Voicemail Action Type
                     </span>
-                    <input
-                      value={agentDraft.voiceMailDetection?.action?.type ?? ''}
+                    <select
+                      value={agentDraft.voiceMailOption?.voiceMailOptionType ?? ''}
                       onChange={(e) =>
                         setAgentDraft((prev) => ({
                           ...prev,
-                          voiceMailDetection: {
-                            ...(prev.voiceMailDetection ?? {}),
-                            action: {
-                              ...(prev.voiceMailDetection?.action ?? { type: '' }),
-                              type: e.target.value as unknown as VoiceMailActionType,
-                            },
+                          voiceMailOption: {
+                            ...(prev.voiceMailOption ?? { voiceMailOptionType: 'hangup' }),
+                            voiceMailOptionType: e.target.value as VoiceMailActionType,
                           },
                         }))
                       }
                       className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      placeholder="static_text"
+                    >
+                      <option value="" className="bg-black text-white">
+                        Select action
+                      </option>
+                      <option value="hangup" className="bg-black text-white">
+                        hangup
+                      </option>
+                      <option value="prompt" className="bg-black text-white">
+                        prompt
+                      </option>
+                      <option value="static_text" className="bg-black text-white">
+                        static_text
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="grid gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
+                      Voicemail Text (for prompt/static_text)
+                    </span>
+                    <input
+                      value={agentDraft.voiceMailOption?.text ?? ''}
+                      onChange={(e) =>
+                        setAgentDraft((prev) => ({
+                          ...prev,
+                          voiceMailOption: {
+                            ...(prev.voiceMailOption ?? { voiceMailOptionType: 'hangup' }),
+                            text: e.target.value,
+                          },
+                        }))
+                      }
+                      className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
+                      placeholder="Leave a message after the tone..."
                     />
                   </label>
 
@@ -1088,13 +1069,19 @@ export function AgentConfigEditor({
                         Digit Limit
                       </span>
                       <input
-                        inputMode="decimal"
-                        value={agentDraft.userDtmfOptions?.digit_limit ?? ''}
+                        inputMode="numeric"
+                        min={1}
+                        max={50}
+                        value={agentDraft.userDtmfOption?.digit_limit ?? ''}
                         onChange={(e) =>
                           setAgentDraft((prev) => ({
                             ...prev,
+                            userDtmfOption: {
+                              ...(prev.userDtmfOption ?? {}),
+                              digit_limit: e.target.value === '' ? undefined : Number(e.target.value),
+                            },
                             userDtmfOptions: {
-                              ...(prev.userDtmfOptions ?? {}),
+                              ...(prev.userDtmfOption ?? {}),
                               digit_limit: e.target.value === '' ? undefined : Number(e.target.value),
                             },
                           }))
@@ -1107,12 +1094,17 @@ export function AgentConfigEditor({
                         Termination Key
                       </span>
                       <input
-                        value={agentDraft.userDtmfOptions?.termination_key ?? ''}
+                        maxLength={1}
+                        value={agentDraft.userDtmfOption?.termination_key ?? ''}
                         onChange={(e) =>
                           setAgentDraft((prev) => ({
                             ...prev,
+                            userDtmfOption: {
+                              ...(prev.userDtmfOption ?? {}),
+                              termination_key: e.target.value,
+                            },
                             userDtmfOptions: {
-                              ...(prev.userDtmfOptions ?? {}),
+                              ...(prev.userDtmfOption ?? {}),
                               termination_key: e.target.value,
                             },
                           }))
@@ -1126,12 +1118,18 @@ export function AgentConfigEditor({
                       </span>
                       <input
                         inputMode="numeric"
-                        value={agentDraft.userDtmfOptions?.timeout_ms ?? ''}
+                        min={1000}
+                        max={15000}
+                        value={agentDraft.userDtmfOption?.timeout_ms ?? ''}
                         onChange={(e) =>
                           setAgentDraft((prev) => ({
                             ...prev,
+                            userDtmfOption: {
+                              ...(prev.userDtmfOption ?? {}),
+                              timeout_ms: e.target.value === '' ? undefined : Number(e.target.value),
+                            },
                             userDtmfOptions: {
-                              ...(prev.userDtmfOptions ?? {}),
+                              ...(prev.userDtmfOption ?? {}),
                               timeout_ms: e.target.value === '' ? undefined : Number(e.target.value),
                             },
                           }))
@@ -1145,21 +1143,107 @@ export function AgentConfigEditor({
                     <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
                       PII Mode
                     </span>
-                    <input
-                      value={agentDraft.piiConfig?.mode ?? ''}
+                    <select
+                      value="POST_CALL"
                       onChange={(e) =>
                         setAgentDraft((prev) => ({
                           ...prev,
                           piiConfig: {
-                            mode: e.target.value as unknown as PiiModeType,
+                            mode: 'POST_CALL' as PiiModeType,
                             categories: (prev.piiConfig?.categories ?? []) as PiiCategoriesType,
                           },
                         }))
                       }
                       className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      placeholder="post_call"
-                    />
+                    >
+                      <option value="POST_CALL">POST_CALL</option>
+                    </select>
                   </label>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold">Personal Info Redaction (PII)</p>
+                        <p className="mt-1 text-xs text-white/55">
+                          Select sensitive categories to redact.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPiiEditorOpen(true)}
+                        className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-semibold text-white transition hover:bg-white/15"
+                      >
+                        Set up
+                      </button>
+                    </div>
+                    <p className="mt-3 text-xs text-white/60">
+                      {piiCategories.length > 0
+                        ? `${piiCategories.length} categories selected`
+                        : 'No categories selected'}
+                    </p>
+                  </div>
+
+                  {piiEditorOpen ? (
+                    <div
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Set PII categories"
+                      onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) setPiiEditorOpen(false);
+                      }}
+                    >
+                      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-black p-6 text-white shadow-[0_50px_160px_rgba(0,0,0,0.55)]">
+                        <div className="flex items-center justify-between gap-4">
+                          <h3 className="text-lg font-semibold">Set PII Categories</h3>
+                          <button
+                            type="button"
+                            onClick={() => setPiiEditorOpen(false)}
+                            className="rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+                            aria-label="Close"
+                          >
+                            <span className="text-xl leading-none">×</span>
+                          </button>
+                        </div>
+
+                        <div className="mt-4 grid max-h-[60vh] gap-4 overflow-y-auto pr-1">
+                          {PII_CATEGORY_GROUPS.map((group) => (
+                            <div key={`pii-group-${group.title}`} className="grid gap-2">
+                              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
+                                {group.title}
+                              </p>
+                              <div className="grid gap-2 sm:grid-cols-2">
+                                {group.items.map((item) => (
+                                  <label
+                                    key={`pii-category-${item.value}`}
+                                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={piiCategories.includes(item.value)}
+                                      onChange={(e) => togglePiiCategory(item.value, e.target.checked)}
+                                      className="h-4 w-4"
+                                    />
+                                    <span>{item.label}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-5 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setPiiEditorOpen(false)}
+                            className="rounded-2xl border border-white/15 bg-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     <button
@@ -1302,6 +1386,10 @@ export function AgentConfigEditor({
                                   setPostCallDraft((prev) => ({
                                     ...prev,
                                     type: e.target.value as KnownPostCallFieldType,
+                                    choices:
+                                      e.target.value === 'enum' ? prev.choices : undefined,
+                                    examples:
+                                      e.target.value === 'string' ? prev.examples : undefined,
                                   }))
                                 }
                                 className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
@@ -1547,7 +1635,9 @@ export function AgentConfigEditor({
                       onChange={(e) => {
                         try {
                           const parsed = JSON.parse(e.target.value);
-                          if (isRecord(parsed)) setAgentDraft(parsed as unknown as VoiceAgentDto);
+                          if (isRecord(parsed)) {
+                            setAgentDraft(normalizeAgentForEditor(parsed as unknown as VoiceAgentDto));
+                          }
                         } catch {
                           // keep last valid
                         }
