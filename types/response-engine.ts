@@ -10,7 +10,10 @@ import {
 import { PostCallField } from './analysis';
 
 export interface ResponseEngineRefDto {
-  type: string;
+  engineId?: string;
+  type?: string;
+  llmId?: string;
+  conversationFlowId?: string;
 }
 
 export interface ConversationFlowRefDto extends ResponseEngineRefDto {
@@ -19,6 +22,7 @@ export interface ConversationFlowRefDto extends ResponseEngineRefDto {
 
 export interface ReacherrLlmRefDto extends ResponseEngineRefDto {
   llmId?: string;
+  engineId?: string;
 }
 
 export type ResponseEngineRef = ConversationFlowRefDto | ReacherrLlmRefDto;
@@ -46,6 +50,9 @@ export interface UserDtmfOptions {
   digit_limit?: number;
   termination_key?: string;
   timeout_ms?: number;
+  digitLimit?: number;
+  terminationKey?: string;
+  timeoutMs?: number;
 }
 
 export interface Action {
@@ -66,13 +73,9 @@ export interface StaticTextVoicemailAction extends Action {
   text?: string;
 }
 
-export type VoicemailAction =
-  | HungupVoiceMailAction
-  | PromptVoicemailAction
-  | StaticTextVoicemailAction;
-
-export interface VoicemailOption {
-  action?: VoicemailAction;
+export interface VoiceMailOption {
+  voiceMailOptionType: VoicemailActionType;
+  text?: string;
 }
 
 export interface VoiceAgentDto {
@@ -82,22 +85,29 @@ export interface VoiceAgentDto {
   responseEngine: ResponseEngineRef;
   agentName: string;
   isPublished?: boolean;
+  voiceId?: string;
+  voiceModel?: string;
+  sttProvider?: string;
+  boostedKeyWords?: string[];
   ttsConfig?: TtsConfig;
   sttConfig?: SttConfig;
   language?: LanguageCode;
+  languageEnum?: LanguageCode;
   webhookUrl?: string;
   webhookTimeoutMs?: number;
   maxCallDurationMs?: number;
   ringTimeOutMs?: number;
-  noResponseTimeoutMs?: number;
   enableVoicemailDetection?: boolean;
-  voiceMailDetection?: VoicemailOption;
+  voiceMailDetectionTimeOutMs?: number;
+  voiceMailMessage?: string;
+  voiceMailOption?: VoiceMailOption;
   analysisSuccessfulPrompt?: string;
   analysisSummaryPrompt?: string;
-  postCallAnalysisData?: PostCallField[];
+  postCallAnalysisData?: PostCallField[] | { data?: PostCallField[] };
   versionDescription?: string;
   piiConfig?: PiiConfig;
   allowUserDtmf?: boolean;
+  userDtmfOption?: UserDtmfOptions;
   userDtmfOptions?: UserDtmfOptions;
 }
 
