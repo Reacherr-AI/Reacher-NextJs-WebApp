@@ -3,6 +3,7 @@ import { parseJsonResponse } from '@/lib/route-helpers';
 import type { ReacherrLlmDto, VoiceAgentDto } from '@/types';
 import { notFound } from 'next/navigation';
 import { AgentConfigEditor } from '../_components/agent-config-editor';
+import { getVoiceConfigByLanguage } from '../_lib/config';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -27,9 +28,9 @@ const sanitizeInitialAgentVoice = (agent: VoiceAgentDto): VoiceAgentDto => {
     voiceId: isPlaceholderVoiceId(agent.voiceId) ? undefined : agent.voiceId,
     ttsConfig: agent.ttsConfig
       ? {
-          ...agent.ttsConfig,
-          voiceId: isPlaceholderVoiceId(agent.ttsConfig.voiceId) ? '' : agent.ttsConfig.voiceId,
-        }
+        ...agent.ttsConfig,
+        voiceId: isPlaceholderVoiceId(agent.ttsConfig.voiceId) ? '' : agent.ttsConfig.voiceId,
+      }
       : agent.ttsConfig,
   };
 };
@@ -39,6 +40,18 @@ type ConfigDto = {
   ttsModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
   languages?: Array<{ code?: string; name?: string }>;
   emotions?: string[];
+  voices?: Array<{
+    voiceId?: string;
+    voiceName?: string;
+    provider?: string;
+    gender?: string;
+    accent?: string;
+    age?: string;
+    avatarUrl?: string | null;
+    previewAudioUrl?: string | null;
+    recommended?: boolean;
+    supportedLanguages?: string[];
+  }>;
 };
 
 const resolveReacherrLlmId = (agent: VoiceAgentDto): string | null => {
@@ -87,6 +100,13 @@ export default async function AgentDetailsPage({
     const data = await configRes.json().catch(() => null as ConfigDto | null);
     if (isRecord(data)) config = data;
   }
+
+  const agentLanguageCode = (agent.languageEnum ?? agent.language ?? 'en').toString().trim().toLowerCase();
+  const voices = getVoiceConfigByLanguage(agentLanguageCode);
+  config = {
+    ...(config ?? {}),
+    voices,
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
