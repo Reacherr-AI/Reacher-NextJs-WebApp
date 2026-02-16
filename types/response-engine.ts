@@ -78,6 +78,10 @@ export interface VoiceMailOption {
   text?: string;
 }
 
+export interface LegacyVoicemailOption {
+  action?: HungupVoiceMailAction | PromptVoicemailAction | StaticTextVoicemailAction;
+}
+
 export interface VoiceAgentDto {
   agentId?: string;
   version?: number;
@@ -97,9 +101,12 @@ export interface VoiceAgentDto {
   webhookTimeoutMs?: number;
   maxCallDurationMs?: number;
   ringTimeOutMs?: number;
+  enableVoiceMailDetection?: boolean;
   enableVoicemailDetection?: boolean;
   voiceMailDetectionTimeOutMs?: number;
   voiceMailMessage?: string;
+  voiceMailDetection?: LegacyVoicemailOption;
+  voicemailOption?: VoiceMailOption;
   voiceMailOption?: VoiceMailOption;
   analysisSuccessfulPrompt?: string;
   analysisSummaryPrompt?: string;

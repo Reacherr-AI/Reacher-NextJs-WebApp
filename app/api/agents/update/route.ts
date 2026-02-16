@@ -10,12 +10,37 @@ const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
+const sanitizeVoiceMailOption = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  const out: Record<string, unknown> = {};
+  if (typeof value.voiceMailOptionType === 'string') {
+    out.voiceMailOptionType = value.voiceMailOptionType;
+  }
+  if (typeof value.text === 'string') {
+    out.text = value.text;
+  }
+  return out;
+};
+
+const sanitizeUpdatePayload = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  const payload = { ...value };
+  if ('voiceMailOption' in payload) {
+    payload.voiceMailOption = sanitizeVoiceMailOption(payload.voiceMailOption);
+  }
+  if ('voicemailOption' in payload) {
+    payload.voicemailOption = sanitizeVoiceMailOption(payload.voicemailOption);
+  }
+  return payload;
+};
+
 export async function PATCH(req: Request) {
   const url = new URL(req.url);
   const raw = (await req.json().catch(() => null)) as unknown;
+  const sanitized = sanitizeUpdatePayload(raw);
 
   const agentIdFromQuery = url.searchParams.get('agentId');
-  const agentIdFromBody = isRecord(raw) ? raw.agentId : undefined;
+  const agentIdFromBody = isRecord(sanitized) ? sanitized.agentId : undefined;
   const agentId = isUuid(agentIdFromQuery)
     ? agentIdFromQuery
     : isUuid(agentIdFromBody)
@@ -26,13 +51,13 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ message: 'Missing or invalid agentId.' }, { status: 400 });
   }
 
-  if (!isRecord(raw)) {
+  if (!isRecord(sanitized)) {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
 
   const res = await apiFetch(`/api/v1/update-voice-agent/${agentId}`, {
     method: 'PATCH',
-    body: JSON.stringify(raw),
+    body: JSON.stringify(sanitized),
   });
   const parsed = await parseJsonResponse<VoiceAgentDto>(res);
 

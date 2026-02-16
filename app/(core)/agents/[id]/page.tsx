@@ -11,6 +11,36 @@ const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
+const isPlaceholderVoiceId = (value: unknown): boolean => {
+  if (typeof value !== 'string') return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized.endsWith('-default') || normalized === 'alloy';
+};
+
+const sanitizeInitialAgentVoice = (agent: VoiceAgentDto): VoiceAgentDto => {
+  if (!isPlaceholderVoiceId(agent.voiceId) && !isPlaceholderVoiceId(agent.ttsConfig?.voiceId)) {
+    return agent;
+  }
+
+  return {
+    ...agent,
+    voiceId: isPlaceholderVoiceId(agent.voiceId) ? undefined : agent.voiceId,
+    ttsConfig: agent.ttsConfig
+      ? {
+          ...agent.ttsConfig,
+          voiceId: isPlaceholderVoiceId(agent.ttsConfig.voiceId) ? '' : agent.ttsConfig.voiceId,
+        }
+      : agent.ttsConfig,
+  };
+};
+
+type ConfigDto = {
+  llmModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
+  ttsModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
+  languages?: Array<{ code?: string; name?: string }>;
+  emotions?: string[];
+};
+
 const resolveReacherrLlmId = (agent: VoiceAgentDto): string | null => {
   const re = agent.responseEngine as unknown;
   if (!isRecord(re)) return null;
@@ -34,7 +64,7 @@ export default async function AgentDetailsPage({
   const agentParsed = await parseJsonResponse<VoiceAgentDto>(agentRes);
   if (!agentParsed.ok) notFound();
 
-  const agent = agentParsed.data as VoiceAgentDto;
+  const agent = sanitizeInitialAgentVoice(agentParsed.data as VoiceAgentDto);
 
   let llm: ReacherrLlmDto | null = null;
   const llmId = resolveReacherrLlmId(agent);
@@ -48,9 +78,26 @@ export default async function AgentDetailsPage({
     }
   }
 
+  let configError: string | null = null;
+  let config: ConfigDto | null = null;
+  const configRes = await apiFetch('/api/v1/config', { method: 'GET' });
+  if (!configRes.ok) {
+    configError = (await configRes.text()) || 'Unable to load config.';
+  } else {
+    const data = await configRes.json().catch(() => null as ConfigDto | null);
+    if (isRecord(data)) config = data;
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
-      <AgentConfigEditor initialAgent={agent} initialLlm={llm} />
+      {configError ? (
+        <div className="mx-auto max-w-378 px-6 pt-6 sm:px-10">
+          <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 px-6 py-4 text-sm text-yellow-100">
+            Config fetch failed: {configError}
+          </div>
+        </div>
+      ) : null}
+      <AgentConfigEditor initialAgent={agent} initialLlm={llm} initialConfig={config} />
     </div>
   );
 }
