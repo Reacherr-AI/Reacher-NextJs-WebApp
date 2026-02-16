@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input';
 import { AddSourceMenu } from './add-source-menu';
 import { AddTextSourceModal } from './add-text-source-modal';
 import { AddWebPagesModal } from './add-web-pages-modal';
+import {
+  KNOWLEDGE_BASE_FILE_ACCEPT,
+  createKnowledgeBaseTextFile,
+  knowledgeBaseFileValidationErrorMessage,
+  splitAllowedKnowledgeBaseFiles,
+  toKnowledgeBaseTxtFilename,
+} from '../_lib/file-formats';
 import type { DraftFileSource, DraftSource, DraftTextSource, DraftUrlSource } from './types';
 
 type ApiError = { message?: unknown };
@@ -36,7 +43,7 @@ const sourceSummary = (source: DraftSource) => {
   }
 
   if (source.kind === 'text') {
-    return source.title;
+    return toKnowledgeBaseTxtFilename(source.title);
   }
 
   return `${source.websiteUrl || 'website'} (${source.urls.length} page(s))`;
@@ -108,13 +115,8 @@ export function CreateKnowledgeBaseModal({
         }
 
         if (source.kind === 'text') {
-          formData.append(
-            'knowledgeBaseTexts',
-            new Blob([JSON.stringify({ title: source.title, text: source.text })], {
-              type: 'application/json',
-            }),
-            'knowledgeBaseText.json'
-          );
+          const textFile = createKnowledgeBaseTextFile(source.title, source.text);
+          formData.append('knowledgeBaseFiles', textFile, textFile.name);
           continue;
         }
 
@@ -171,11 +173,19 @@ export function CreateKnowledgeBaseModal({
           ref={fileInputRef}
           type="file"
           multiple
+          accept={KNOWLEDGE_BASE_FILE_ACCEPT}
           className="hidden"
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);
             event.currentTarget.value = '';
-            appendFiles(files);
+            if (files.length === 0) return;
+            const { validFiles, invalidTypeFiles, oversizedFiles } = splitAllowedKnowledgeBaseFiles(files);
+            setError(
+              invalidTypeFiles.length || oversizedFiles.length
+                ? knowledgeBaseFileValidationErrorMessage(invalidTypeFiles, oversizedFiles)
+                : null
+            );
+            appendFiles(validFiles);
           }}
         />
 
