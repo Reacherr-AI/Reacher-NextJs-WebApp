@@ -13,106 +13,19 @@ import { FeatureCard } from "@/components/layout/feature-card";
 import { SiteNavbar } from "@/components/layout/site-navbar";
 import { HaveQuestionsSection } from "@/components/layout/have-questions";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { getAccessToken } from "@/lib/auth/auth-cookies";
+// Import the new client component
+import { InteractiveUseCases } from "@/components/home/use-cases";
+import { ToolsShowcase } from "@/components/home/tools-showcase";
+import { CategoryShowcase } from "@/components/home/category-showcase";
+import { TestimonialSection } from "@/components/home/testimonial-section";
+import { ProSupportSection } from "@/components/home/pro-support";
 import { cn } from "@/lib/utils";
 
 const brandLogos = [
   { name: "Doordash", src: "/images/brands/doordash-logo.svg" },
   { name: "Amazon", src: "/images/brands/amazon-logo.png" },
   { name: "Shopify", src: "/images/brands/shopify-logo.png" },
-];
-
-type UseCaseIconName = "support" | "mic" | "dispatch" | "leads";
-type UseCase = {
-  title: string;
-  icon: UseCaseIconName;
-  featured?: boolean;
-  description?: string;
-  ctaLabel?: string;
-};
-
-function UseCaseIcon({
-  icon,
-  className,
-}: {
-  icon: UseCaseIconName;
-  className?: string;
-}) {
-  if (icon === "support") {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        className={cn("h-6 w-6 text-white", className)}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M6 9a6 6 0 0 1 12 0v5a3 3 0 0 1-3 3h-3" />
-        <rect x="4" y="10" width="4" height="6" rx="2" />
-        <rect x="16" y="10" width="4" height="6" rx="2" />
-      </svg>
-    );
-  }
-
-  if (icon === "mic") {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        className={cn("h-6 w-6 text-white", className)}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <rect x="9" y="3" width="6" height="12" rx="3" />
-        <path d="M5 11a7 7 0 0 0 14 0" />
-        <path d="M12 18v3" />
-      </svg>
-    );
-  }
-
-  if (icon === "dispatch") {
-    return (
-      <svg
-        viewBox="0 0 24 24"
-        className={cn("h-6 w-6 text-white", className)}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-      >
-        <path d="M4 7h16v10H4z" />
-        <path d="M8 7v10" />
-        <path d="M16 7v10" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={cn("h-6 w-6 text-white", className)}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-    >
-      <circle cx="9" cy="9" r="3" />
-      <circle cx="17" cy="7" r="2" />
-      <path d="M4 19a5 5 0 0 1 10 0" />
-      <path d="M14 17a4 4 0 0 1 6 0" />
-    </svg>
-  );
-}
-
-const useCases: UseCase[] = [
-  { title: "Customer Support", icon: "support" },
-  { title: "Receptionist", icon: "mic" },
-  { title: "Dispatch Service", icon: "dispatch" },
-  {
-    title: "Lead Qualification",
-    icon: "leads",
-    featured: true,
-    description:
-      "Identify potential clients and screen prospect. Automate outreach for better conversion.",
-    ctaLabel: "Learn More",
-  },
 ];
 
 const voiceStyles = [
@@ -127,6 +40,7 @@ const voiceStyles = [
   { name: "John", src: "/images/testimonials/testimonial-9.svg" },
   { name: "Clara", src: "/images/testimonials/testimonial-10.svg" },
 ];
+
 const faqItems = [
   "How much time am I actually getting for my money?",
   "How do I communicate feedback/revisions?",
@@ -178,109 +92,90 @@ const featureItems = [
   },
 ] as const;
 
-export default function Home() {
+export default async function Home() {
+  const accessToken = await getAccessToken();
+  const isLoggedIn = !!(accessToken && accessToken.trim().length > 0);
   return (
     <div className="min-h-screen bg-black">
-      <main className="mx-auto flex min-h-[850.5px] w-full max-w-378 flex-col rounded-b-[23.62px] bg-[radial-gradient(1200px_circle_at_75%_78%,rgba(248,248,248,1)_0%,rgba(56,66,218,1)_32%,rgba(12,14,55,1)_60%,rgba(0,0,0,1)_100%)] px-6 pb-24 pt-10 shadow-[0_40px_120px_rgba(6,7,33,0.45)] sm:px-10">
-        <SiteNavbar activeLabel="Home" />
-
-        <section className="flex flex-1 flex-col items-center justify-center text-center text-white">
-          <div className="max-w-3xl">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
-              AI voice agent platform
-            </p>
-            <h1 className="text-3xl font-semibold leading-tight text-white sm:text-5xl">
-              AI Voice Agents That Handle Calls For You
-            </h1>
-            <p className="mt-4 text-sm font-medium text-white/60 sm:text-base">
-              #1 AI Voice Agent Platform for Automating Calls
-            </p>
-          </div>
-
-          <button className="mt-10 inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(16,20,64,0.45)] backdrop-blur transition hover:bg-white/15">
-            Try Reacherr
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white">
-              <Image
-                src="/icons/spotify-bars.png"
-                alt="Audio"
-                width={16}
-                height={16}
+      <main className="relative mx-auto flex min-h-screen sm:min-h-[850px] w-full max-w-378 flex-col overflow-hidden rounded-b-[24px] bg-black px-6 pb-24 pt-10 shadow-2xl sm:px-10">
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <div className="absolute bottom-[-15%] sm:bottom-[-35%] lg:bottom-[-120%] left-1/2 -translate-x-1/2 flex justify-center">
+            <div className="animate-pendulum">
+              <div
+                className="rounded-full mix-blend-screen blur-[60px] sm:blur-[80px] lg:blur-[100px] h-[450px] w-[750px] sm:h-[1600px] sm:w-[2800px] lg:h-[1600px] lg:w-[2800px]"
+                style={{
+                  background: "radial-gradient(circle, #FFFFFF 10%, rgb(37,68,243) 30%, rgb(10,13,202) 60%, rgba(0,0,0,0) 80%)",
+                }}
               />
-            </span>
-          </button>
-        </section>
+            </div>
+          </div>
+        </div>
+        <SiteNavbar activeLabel="Home" showDashboard={isLoggedIn}/>
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <section className="mt-16 flex flex-col items-center justify-center text-center text-white sm:flex-1">
+            <div className="max-w-3xl">
+              {/* <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-white/50">
+                AI voice agent platform
+              </p> */}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-white">
+                AI Voice Agents That Handle Calls For You
+            </h1>
+              <p className="mt-6 text-sm font-medium text-white/60 sm:text-base">
+                #1 AI Voice Agent Platform for Automating Calls
+              </p>
+            </div>
+
+            <button className="mt-10 inline-flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-6 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur transition hover:bg-white/15">
+              Try Reacherr
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black">
+                <Image
+                  src="/icons/spotify-bars.png"
+                  alt="Audio"
+                  width={16}
+                  height={16}
+                />
+              </span>
+            </button>
+          </section>
+        </div>
       </main>
 
-      <section className="mx-auto mt-14 flex w-full max-w-275 flex-col items-center px-6 text-center text-white sm:px-10">
-        <p
-          className="text-[22px] font-normal leading-[140%] text-white/80 sm:text-3xl"
-          style={{ fontFamily: "var(--font-inter)" }}
-        >
-          Trusted by{" "}
-          <span className="font-bold text-[#6b6ff9]">10,000+</span>{" "}
-          customer and brands worldwide
-        </p>
+      {/* TRUSTED BY SECTION */}
+      <section className="mx-auto mt-14 flex w-full max-w-5xl flex-col items-center px-6 text-center text-white sm:px-10">
+        <h2 className="text-2xl font-medium tracking-tight text-white/90 sm:text-4xl lg:text-[40px]">
+          Trusted by <span className="text-[#6b6ff9]">10,000+</span> creators and <br className="hidden sm:block" />
+          brands worldwide
+        </h2>
         <Marquee
-          className="mt-8 w-full max-w-4xl opacity-70"
-          duration={28}
-          gap="2.5rem"
+          className="mt-8 sm:mt-10 w-full opacity-70 hover:opacity-100 transition-opacity duration-500"
+          duration={35}
+          gap="10rem"
           pauseOnHover
           fade
         >
-          <span className="px-8 text-base font-semibold uppercase tracking-[0.4em] text-white/55">
-            Microsoft
-          </span>
           {brandLogos.map((brand) => (
             <div
               key={brand.name}
-              className="relative h-8 w-28 shrink-0 px-8 sm:h-9 sm:w-32"
+              className="relative h-14 sm:h-20 lg:h-24 w-[160px] sm:w-[220px] lg:w-[260px] flex-shrink-0"
             >
               <Image
                 src={brand.src}
                 alt={brand.name}
                 fill
-                className="object-contain"
+                className="object-contain opacity-80 hover:opacity-100 transition-all duration-300"
+                sizes="(max-width: 640px) 160px,
+                      (max-width: 1024px) 220px,
+                      260px"
               />
             </div>
           ))}
         </Marquee>
       </section>
 
-      <section className="mx-auto mt-16 w-full max-w-275 px-6 text-white sm:px-10">
-        <div className="max-w-xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#6b6ff9]">
-            Use Case
-          </p>
-          <h2 className="mt-3 text-2xl font-semibold leading-snug sm:text-3xl">
-            Reacherr AI turns voice interactions into automated workflows
-          </h2>
-        </div>
+      {/* USE CASES COMPONENT */}
+      <InteractiveUseCases />
 
-        <div className="mt-8 grid gap-5 sm:grid-cols-[repeat(3,minmax(0,1fr))_1.6fr]">
-          {useCases.map((useCase) => (
-            <FeatureCard
-              key={useCase.title}
-              title={useCase.title}
-              featured={useCase.featured}
-              icon={
-                <UseCaseIcon
-                  icon={useCase.icon}
-                  className={useCase.featured ? "h-7 w-7" : undefined}
-                />
-              }
-              description={useCase.description}
-              action={
-                useCase.ctaLabel ? (
-                  <button className="rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white/80">
-                    {useCase.ctaLabel}
-                  </button>
-                ) : null
-              }
-            />
-          ))}
-        </div>
-      </section>
-
+      {/* VOICE STYLES SECTION */}
       <section className="mx-auto mt-16 grid w-full max-w-275 gap-10 px-6 text-white sm:grid-cols-[1.1fr_2fr] sm:px-10">
         <div>
           <h3 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
@@ -293,29 +188,24 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-5">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-center sm:gap-5">
           {voiceStyles.map((voice) => (
             <div
               key={voice.name}
-              className="flex items-center gap-4 rounded-full border border-white/15 bg-black/40 pl-2 px-5 py-1 text-sm text-white/80 shadow-[0_12px_30px_rgba(10,12,30,0.35)]"
+              className="flex items-center gap-3 rounded-full border border-white/10 bg-black/40 p-1.5 pr-4 text-xs text-white/80 shadow-lg backdrop-blur-sm"
             >
-              <div className="relative h-10 w-10 overflow-hidden rounded-full bg-white/10 ring-2 ring-white/5">
-                <Image
-                  src={voice.src}
-                  alt={voice.name}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative h-8 w-8 sm:h-10 sm:w-10 overflow-hidden rounded-full ring-1 ring-white/10">
+                <Image src={voice.src} alt={voice.name} fill className="object-cover" />
               </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{voice.name}</p>
-                <p className="text-[11px] text-white/50">Soft &amp; Natural</p>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold text-white">{voice.name}</p>
+                <p className="text-[10px] text-white/40">Soft & Natural</p>
               </div>
             </div>
           ))}
         </div>
       </section>
-
+      <CategoryShowcase />
       <FeaturesGrid
         className="mx-auto mt-20 max-w-275 px-6 text-white sm:px-10"
         headline={
@@ -325,8 +215,10 @@ export default function Home() {
         }
         items={featureItems}
       />
-
+      <ToolsShowcase />
+      <TestimonialSection />
       <HaveQuestionsSection faqItems={faqItems} />
+      <ProSupportSection />
       <SiteFooter />
     </div>
   );

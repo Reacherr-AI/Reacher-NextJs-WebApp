@@ -11,11 +11,15 @@ const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const hasLlmId = (agent: VoiceAgentDto): agent is VoiceAgentDto & {
-  responseEngine: { llmId: string };
-} => {
+const resolveReacherrLlmId = (agent: VoiceAgentDto): string | null => {
   const re = agent.responseEngine as unknown;
-  return isRecord(re) && typeof re.llmId === 'string' && re.llmId.trim().length > 0;
+  if (!isRecord(re)) return null;
+  if (typeof re.type === 'string' && re.type.trim().length > 0 && re.type !== 'reacherr-llm') {
+    return null;
+  }
+  if (typeof re.llmId === 'string' && re.llmId.trim().length > 0) return re.llmId;
+  if (typeof re.engineId === 'string' && re.engineId.trim().length > 0) return re.engineId;
+  return null;
 };
 
 export default async function AgentDetailsPage({
@@ -33,8 +37,9 @@ export default async function AgentDetailsPage({
   const agent = agentParsed.data as VoiceAgentDto;
 
   let llm: ReacherrLlmDto | null = null;
-  if (hasLlmId(agent)) {
-    const llmRes = await apiFetch(`/api/v1/get-reacherr-llm/${agent.responseEngine.llmId}`, {
+  const llmId = resolveReacherrLlmId(agent);
+  if (llmId) {
+    const llmRes = await apiFetch(`/api/v1/get-reacherr-llm/${llmId}`, {
       method: 'GET',
     });
     const llmParsed = await parseJsonResponse<ReacherrLlmDto>(llmRes);

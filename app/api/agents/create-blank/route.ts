@@ -5,15 +5,19 @@ import { parseJsonResponse } from '@/lib/route-helpers';
 
 type Architecture = 'single-prompt';
 
-type EngineType = 'REACHERR_LLM' | 'CONVERSATION_FLOW';
+type EngineType = 'reacherr-llm' | 'conversational' | 'custom';
+
+type VoiceMetadata = {
+  voiceId?: string;
+  recommended?: boolean;
+};
 
 type VoiceAgentCreateBody = {
   agentName: string;
+  voiceId: string;
   responseEngine: {
-    type: EngineType;
-    llmId?: string;
-    conversationFlowId?: string;
-    version: number;
+    engineId: string;
+    type?: EngineType;
   };
 };
 
@@ -25,6 +29,11 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 const isReacherrLlmDto = (value: unknown): value is ReacherrLlmDto =>
   isRecord(value) && (value.llmId === undefined || typeof value.llmId === 'string');
+
+const isVoiceMetadata = (value: unknown): value is VoiceMetadata =>
+  isRecord(value) &&
+  (value.voiceId === undefined || typeof value.voiceId === 'string') &&
+  (value.recommended === undefined || typeof value.recommended === 'boolean');
 
 export async function POST(req: Request) {
   const raw = (await req.json().catch(() => null)) as unknown;
@@ -65,9 +74,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: 'Backend did not return an llmId.' }, { status: 502 });
   }
 
+  const voicesRes = await apiFetch('/api/v1/list-voices', { method: 'GET' });
+  const voicesParsed = await parseJsonResponse<unknown>(voicesRes);
+  if (!voicesParsed.ok) {
+    return NextResponse.json(voicesParsed.data, { status: voicesParsed.status });
+  }
+
+  const voices = Array.isArray(voicesParsed.data)
+    ? voicesParsed.data.filter(isVoiceMetadata)
+    : [];
+
+  const preferredVoice =
+    voices.find((voice) => voice.recommended && typeof voice.voiceId === 'string') ??
+    voices.find((voice) => typeof voice.voiceId === 'string');
+  const voiceId = preferredVoice?.voiceId ?? 'cartesia-brooke';
+
   const agentBody: VoiceAgentCreateBody = {
     agentName: `Single-Prompt Agent`,
-    responseEngine: { type: 'REACHERR_LLM', llmId, version: 0 },
+    voiceId,
+    responseEngine: { type: 'reacherr-llm', engineId: llmId },
   };
 
   const agentRes = await apiFetch('/api/v1/create-voice-agent', {

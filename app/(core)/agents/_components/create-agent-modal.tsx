@@ -39,7 +39,13 @@ const isVoiceAgentDto = (value: unknown): value is VoiceAgentDto => {
   // `agentName` and `responseEngine` are required in the TS type.
   if (typeof value.agentName !== 'string') return false;
   if (!isRecord(value.responseEngine)) return false;
-  if (typeof value.responseEngine.type !== 'string') return false;
+  if (
+    typeof value.responseEngine.type !== 'string' &&
+    typeof value.responseEngine.engineId !== 'string' &&
+    typeof value.responseEngine.llmId !== 'string'
+  ) {
+    return false;
+  }
   return true;
 };
 
