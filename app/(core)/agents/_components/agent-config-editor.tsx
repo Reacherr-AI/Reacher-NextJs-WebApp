@@ -3,7 +3,7 @@
 import * as React from 'react';
 import * as RPNInput from 'react-phone-number-input';
 import flags from 'react-phone-number-input/flags';
-import type { ReacherrLlmDto, VoiceAgentDto } from '@/types';
+import type { KnowledgeBaseDto, ReacherrLlmDto, VoiceAgentDto } from '@/types';
 import {
   conversationConfigStoredResults,
   getLLMProviders,
@@ -55,6 +55,7 @@ type EditorConfigDto = {
     recommended?: boolean;
     supportedLanguages?: string[];
   }>;
+  knowledgeBases?: KnowledgeBaseDto[];
 };
 
 const inferVoiceProviderFromVoiceId = (voiceId: string | undefined): string => {
@@ -534,7 +535,7 @@ const SECTIONS: {
     { id: 'security', label: 'Security & DTMF', group: 'agent' },
     { id: 'postcall', label: 'Post-Call Extraction', group: 'agent' },
     { id: 'llm_model', label: 'LLM: Model', group: 'llm' },
-    { id: 'llm_kb', label: 'LLM: Knowledge Base', group: 'llm', disabled: true },
+    { id: 'llm_kb', label: 'LLM: Knowledge Base', group: 'llm' },
     { id: 'llm_tools', label: 'LLM: Tools', group: 'llm', disabled: true },
     { id: 'llm_mcps', label: 'LLM: MCPs', group: 'llm', disabled: true },
     { id: 'raw', label: 'Raw JSON', group: 'advanced' },
@@ -620,6 +621,7 @@ function resolveReacherrLlmId(agent: VoiceAgentDto): string | null {
   return null;
 }
 
+
 export function AgentConfigEditor({
   initialAgent,
   initialLlm,
@@ -648,6 +650,7 @@ export function AgentConfigEditor({
   const [postCallEditorOpen, setPostCallEditorOpen] = React.useState(false);
   const [piiEditorOpen, setPiiEditorOpen] = React.useState(false);
   const [ttsPickerOpen, setTtsPickerOpen] = React.useState(false);
+  const [kbPickerOpen, setKbPickerOpen] = React.useState(false);
   const [isEditingAgentName, setIsEditingAgentName] = React.useState(false);
   const [editingPostCallIndex, setEditingPostCallIndex] = React.useState<number | null>(null);
   const [ttsDraftModel, setTtsDraftModel] = React.useState('');
@@ -660,6 +663,7 @@ export function AgentConfigEditor({
     name: '',
     description: '',
   });
+  const kbPickerRef = React.useRef<HTMLDivElement | null>(null);
 
   const agentDirty = stringifyStable(agentDraft) !== stringifyStable(baselineAgent);
   const llmDirty =
@@ -886,6 +890,89 @@ export function AgentConfigEditor({
       'Custom'
     );
   }, [configDrivenLlmModelOptions, llmDraft, llmProviderOptions]);
+  const knowledgeBaseOptions = React.useMemo(() => {
+    if (!Array.isArray(initialConfig?.knowledgeBases)) return [];
+    return initialConfig.knowledgeBases
+      .filter(
+        (kb): kb is KnowledgeBaseDto =>
+          typeof kb?.knowledgeBaseId === 'string' &&
+          kb.knowledgeBaseId.trim().length > 0 &&
+          typeof kb?.knowledgeBaseName === 'string'
+      )
+      .map((kb) => ({
+        id: kb.knowledgeBaseId.trim(),
+        name: kb.knowledgeBaseName.trim(),
+        status: kb.status,
+        sourceCount: Array.isArray(kb.knowledgeBaseSources) ? kb.knowledgeBaseSources.length : 0,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [initialConfig?.knowledgeBases]);
+  const selectedKnowledgeBaseIds = React.useMemo(() => {
+    if (!Array.isArray(llmDraft?.knowledgeBaseIds)) return [];
+    return llmDraft.knowledgeBaseIds
+      .filter((id): id is string => typeof id === 'string')
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
+  }, [llmDraft?.knowledgeBaseIds]);
+  const toggleKnowledgeBaseSelection = (knowledgeBaseId: string, checked: boolean) => {
+    setLlmDraft((prev) => {
+      if (!prev) return prev;
+      const current = new Set(
+        (prev.knowledgeBaseIds ?? [])
+          .filter((id): id is string => typeof id === 'string')
+          .map((id) => id.trim())
+          .filter((id) => id.length > 0)
+      );
+      if (checked) current.add(knowledgeBaseId);
+      else current.delete(knowledgeBaseId);
+      return {
+        ...prev,
+        knowledgeBaseIds: Array.from(current),
+      };
+    });
+  };
+  const selectedKnowledgeBaseSet = React.useMemo(
+    () => new Set(selectedKnowledgeBaseIds),
+    [selectedKnowledgeBaseIds]
+  );
+  const unselectedKnowledgeBaseOptions = React.useMemo(
+    () => knowledgeBaseOptions.filter((kb) => !selectedKnowledgeBaseSet.has(kb.id)),
+    [knowledgeBaseOptions, selectedKnowledgeBaseSet]
+  );
+  const knowledgeBaseOptionMap = React.useMemo(
+    () => new Map(knowledgeBaseOptions.map((kb) => [kb.id, kb])),
+    [knowledgeBaseOptions]
+  );
+  const selectedKnowledgeBases = React.useMemo(
+    () =>
+      selectedKnowledgeBaseIds.map((id) => {
+        const matched = knowledgeBaseOptionMap.get(id);
+        return (
+          matched ?? {
+            id,
+            name: id,
+            status: 'COMPLETE' as const,
+            sourceCount: 0,
+          }
+        );
+      }),
+    [knowledgeBaseOptionMap, selectedKnowledgeBaseIds]
+  );
+  React.useEffect(() => {
+    if (!kbPickerOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!kbPickerRef.current) return;
+      if (kbPickerRef.current.contains(event.target as Node)) return;
+      setKbPickerOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+    };
+  }, [kbPickerOpen]);
+  React.useEffect(() => {
+    setKbPickerOpen(false);
+  }, [active]);
   const selectedTtsModel = agentDraft.ttsConfig?.model ?? agentDraft.voiceModel;
   const ttsModelOptions = React.useMemo(() => {
     const currentModel = selectedTtsModel;
@@ -1825,8 +1912,99 @@ export function AgentConfigEditor({
                     </div>
                   </div>
                 ) : active === 'llm_kb' ? (
-                  <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-white/60">
-                    Knowledge base configuration is coming soon.
+                  <div className="grid gap-4">
+                    <p className="text-sm text-white/60">
+                      Add knowledge base to provide context to the agent.
+                    </p>
+                    <div className="grid gap-2">
+                      {selectedKnowledgeBases.length === 0 ? (
+                        <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/60">
+                          No knowledge bases selected.
+                        </div>
+                      ) : (
+                        selectedKnowledgeBases.map((kb) => (
+                          <div
+                            key={kb.id}
+                            className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/30 px-4 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white/90">{kb.name}</p>
+                              <p className="text-xs text-white/55">
+                                {kb.sourceCount} source(s) • {kb.status}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => toggleKnowledgeBaseSelection(kb.id, false)}
+                              className="rounded-lg border border-white/10 bg-black/40 p-1 text-white/65 transition hover:border-white/20 hover:text-white"
+                              aria-label={`Remove ${kb.name}`}
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="relative" ref={kbPickerRef}>
+                      <button
+                        type="button"
+                        onClick={() => setKbPickerOpen((prev) => !prev)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
+                      >
+                        <Plus className="size-4" />
+                        Add
+                      </button>
+                      {kbPickerOpen ? (
+                        <div className="absolute left-0 z-20 mt-2 w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1022] p-2 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+                          <div className="max-h-56 overflow-y-auto">
+                            {unselectedKnowledgeBaseOptions.length === 0 ? (
+                              <p className="px-3 py-2 text-xs text-white/55">
+                                All knowledge bases are already selected.
+                              </p>
+                            ) : (
+                              unselectedKnowledgeBaseOptions.map((kb) => (
+                                <button
+                                  key={kb.id}
+                                  type="button"
+                                  onClick={() => {
+                                    toggleKnowledgeBaseSelection(kb.id, true);
+                                    setKbPickerOpen(false);
+                                  }}
+                                  className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm text-white/85 transition hover:bg-white/10"
+                                >
+                                  <span className="truncate">{kb.name}</span>
+                                  <span className="text-xs text-white/50">{kb.sourceCount}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                          <div className="mt-2 border-t border-white/10 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => window.open('/knowledge-base', '_blank', 'noopener,noreferrer')}
+                              className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-white/85 transition hover:bg-white/10"
+                            >
+                              Add New Knowledge Base
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+                    {knowledgeBaseOptions.length === 0 ? (
+                      <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-white/60">
+                        No knowledge bases found in config.
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={saveLlm}
+                        disabled={saving !== 'idle' || !llmDirty}
+                        className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {saving === 'llm' ? 'Saving llm…' : 'Save llm'}
+                      </button>
+                    </div>
                   </div>
                 ) : active === 'llm_tools' ? (
                   <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-white/60">

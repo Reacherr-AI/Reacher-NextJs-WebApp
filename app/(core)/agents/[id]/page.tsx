@@ -1,12 +1,15 @@
 import { apiFetch } from '@/lib/api';
 import { parseJsonResponse } from '@/lib/route-helpers';
-import type { ReacherrLlmDto, VoiceAgentDto } from '@/types';
+import type { KnowledgeBaseDto, ReacherrLlmDto, VoiceAgentDto } from '@/types';
 import { notFound } from 'next/navigation';
 import { AgentConfigEditor } from '../_components/agent-config-editor';
 import { getVoiceConfigByLanguage } from '../_lib/config';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
+
+const isString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0;
 
 const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
@@ -35,11 +38,22 @@ const sanitizeInitialAgentVoice = (agent: VoiceAgentDto): VoiceAgentDto => {
   };
 };
 
+const isKnowledgeBaseDto = (value: unknown): value is KnowledgeBaseDto => {
+  if (!isRecord(value)) return false;
+  if (!isString(value.knowledgeBaseId)) return false;
+  if (!isString(value.knowledgeBaseName)) return false;
+  if (!isString(value.status)) return false;
+  if (!Array.isArray(value.knowledgeBaseSources)) return false;
+  if (typeof value.lastUpdatedTime !== 'number') return false;
+  return true;
+};
+
 type ConfigDto = {
   llmModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
   ttsModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
   languages?: Array<{ code?: string; name?: string }>;
   emotions?: string[];
+  knowledgeBases?: KnowledgeBaseDto[];
   voices?: Array<{
     voiceId?: string;
     voiceName?: string;
@@ -103,8 +117,21 @@ export default async function AgentDetailsPage({
 
   const agentLanguageCode = (agent.languageEnum ?? agent.language ?? 'en').toString().trim().toLowerCase();
   const voices = getVoiceConfigByLanguage(agentLanguageCode);
+  const knowledgeBasesFromConfig = Array.isArray(config?.knowledgeBases)
+    ? config.knowledgeBases.filter(isKnowledgeBaseDto)
+    : null;
+  let knowledgeBases = knowledgeBasesFromConfig ?? [];
+  if (!knowledgeBasesFromConfig) {
+    const kbRes = await apiFetch('/api/v1/list-knowledge-bases', { method: 'GET' });
+    const kbParsed = await parseJsonResponse<unknown>(kbRes);
+    knowledgeBases = kbParsed.ok && Array.isArray(kbParsed.data)
+      ? kbParsed.data.filter(isKnowledgeBaseDto)
+      : [];
+  }
+
   config = {
     ...(config ?? {}),
+    knowledgeBases,
     voices,
   };
 
