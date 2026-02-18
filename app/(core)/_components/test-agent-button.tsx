@@ -2,7 +2,7 @@
 
 import "@livekit/components-styles";
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Mic, MessageSquare, Send, X, Headphones, User, Bot } from "lucide-react";
+import { MessageSquare, Send, Headphones, User, Bot, PhoneOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
@@ -18,13 +18,14 @@ import {
   useLocalParticipant, 
   useConnectionState,
   useRemoteParticipants,
-  useRoomContext // Added to control global audio
+  useRoomContext
 } from "@livekit/components-react";
 import { ConnectionState, Track } from "livekit-client";
 
 export function TestAgent() {
   const params = useParams();
   const agentId = params.id as string;
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [mode, setMode] = useState<"voice" | "chat">("voice");
 
@@ -38,11 +39,26 @@ export function TestAgent() {
     }
   };
 
+  const handleEndCall = () => {
+    setToken(null);
+    setDialogOpen(false);
+  };
+
   return (
-    <Dialog onOpenChange={(open) => !open && setToken(null)}>
+    <Dialog 
+      open={dialogOpen} 
+      onOpenChange={(open) => {
+        setDialogOpen(open);
+        // CRITICAL: If the modal is being closed (open === false), 
+        // automatically decline/end the call.
+        if (!open) {
+          handleEndCall();
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button 
-          onClick={handleStartCall}
+          onClick={() => setDialogOpen(true)}
           className="rounded-full px-8 py-2 bg-white text-black hover:bg-white/90 transition-all text-sm font-semibold shadow-xl"
         >
           Test Agent
@@ -59,31 +75,63 @@ export function TestAgent() {
             serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
             token={token}
             connect={true}
-            audio={true} 
-            // options={{ 
-            //     adaptiveStream: true, 
-            //     dynacast: true,
-            // }}
+            audio={true}
+            // Ensure the local state stays in sync if LiveKit disconnects internally
             onDisconnected={() => setToken(null)}
           >
-            <AgentInterface mode={mode} setMode={setMode} />
-            {/* The Audio Renderer is now conditional based on mode */}
+            <AgentInterface mode={mode} setMode={setMode} onEndCall={handleEndCall} />
             <RoomAudioRenderer />
           </LiveKitRoom>
         ) : (
-          <div className="flex items-center justify-center h-full text-white/20 italic">
-            Connecting...
-          </div>
+          <StartScreen mode={mode} setMode={setMode} onStart={handleStartCall} />
         )}
       </DialogContent>
     </Dialog>
   );
 }
 
-function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m: "voice" | "chat") => void }) {
+function StartScreen({ mode, setMode, onStart }: { mode: "voice" | "chat"; setMode: (m: "voice" | "chat") => void; onStart: () => void }) {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/20">
+        <div className="flex flex-col">
+          <h2 className="text-lg font-semibold text-white/90">Test your agent</h2>
+          <p className="text-[10px] text-blue-400 uppercase font-bold tracking-widest">Ready to start</p>
+        </div>
+        <div className="flex bg-black/40 p-1.5 rounded-full border border-white/10">
+          <button 
+            onClick={() => setMode("voice")} 
+            className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${mode === 'voice' ? 'bg-white text-black' : 'text-white/40'}`}
+          >
+            <Headphones size={14} /> Voice
+          </button>
+          <button 
+            onClick={() => setMode("chat")} 
+            className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${mode === 'chat' ? 'bg-white text-black' : 'text-white/40'}`}
+          >
+            <MessageSquare size={14} /> Chat
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center">
+        <Button
+          onClick={onStart}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-6 rounded-full text-lg font-semibold shadow-xl"
+        >
+          Test your agent
+        </Button>
+      </div>
+
+      <div className="h-[140px] px-8 border-t border-white/5 bg-black/10" />
+    </div>
+  );
+}
+
+function AgentInterface({ mode, setMode, onEndCall }: { mode: "voice" | "chat"; setMode: (m: "voice" | "chat") => void; onEndCall: () => void }) {
   const { chatMessages, send: sendChat } = useChat();
   const transcriptions = useTranscriptions();
-  const { localParticipant, isMicrophoneEnabled } = useLocalParticipant();
+  const { localParticipant } = useLocalParticipant();
   const remoteParticipants = useRemoteParticipants();
   const connectionState = useConnectionState();
   const room = useRoomContext();
@@ -91,16 +139,18 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
   const [chatInput, setChatInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // FIX: STOP VOICE IN CHAT MODE
+  // Auto-enable mic on start for voice mode
+  useEffect(() => {
+    if (mode === "voice") {
+        localParticipant.setMicrophoneEnabled(true);
+    }
+  }, [mode, localParticipant]);
+
   useEffect(() => {
     room.remoteParticipants.forEach((p) => {
       p.getTrackPublications().forEach((pub) => {
         if (pub.kind === Track.Kind.Audio) {
-          if (mode === "chat") {
-            pub.setEnabled(false); // Mute Agent
-          } else {
-            pub.setEnabled(true); // Unmute Agent
-          }
+          pub.setEnabled(mode === "voice");
         }
       });
     });
@@ -109,7 +159,6 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
   const isAgentActive = remoteParticipants.some(p => p.isSpeaking);
 
   const messages = useMemo(() => {
-    // 1. Process Chat
     const chat = chatMessages.map((m) => ({
       id: m.id,
       role: m.from?.isLocal ? "user" : "agent",
@@ -117,12 +166,11 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
       timestamp: m.timestamp,
     }));
 
-    // 2. Process Transcriptions (Voice)
     const trans = transcriptions.map((t) => ({
-      id: t.id,
-      role: t.participant?.isLocal ? "user" : "agent",
+      id: t.streamInfo.id,
+      role: t.participantInfo?.identity?.includes("agent") ? "agent" : "user",
       text: t.text,
-      timestamp: t.firstReceivedTime,
+      timestamp: t.streamInfo.timestamp
     }));
 
     return [...chat, ...trans].sort((a, b) => a.timestamp - b.timestamp);
@@ -145,10 +193,7 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
         </div>
         <div className="flex bg-black/40 p-1.5 rounded-full border border-white/10">
           <button 
-            onClick={() => {
-              setMode("voice");
-              localParticipant.setMicrophoneEnabled(true);
-            }} 
+            onClick={() => setMode("voice")} 
             className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${mode === 'voice' ? 'bg-white text-black' : 'text-white/40'}`}
           >
             <Headphones size={14} /> Voice
@@ -156,7 +201,7 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
           <button 
             onClick={() => {
               setMode("chat");
-              localParticipant.setMicrophoneEnabled(false); // Auto-mute mic in chat
+              localParticipant.setMicrophoneEnabled(false);
             }} 
             className={`px-6 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 ${mode === 'chat' ? 'bg-white text-black' : 'text-white/40'}`}
           >
@@ -171,8 +216,8 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
           return (
             <motion.div 
               key={msg.id}
-              initial={{ opacity: 0, x: isAgent ? -10 : 10 }} 
-              animate={{ opacity: 1, x: 0 }} 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
               className={`flex w-full ${isAgent ? 'justify-start' : 'justify-end'}`}
             >
               <div className={`flex gap-3 max-w-[80%] ${isAgent ? 'flex-row' : 'flex-row-reverse'}`}>
@@ -215,34 +260,44 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
           {mode === 'voice' ? (
             <motion.div key="voice" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center gap-3">
               <Button 
-                onClick={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
-                className={`h-14 w-14 rounded-full transition-all duration-300 shadow-xl ${isMicrophoneEnabled ? "bg-red-500 scale-110 shadow-red-500/30" : "bg-white text-black"}`}
+                onClick={onEndCall}
+                className="h-14 w-14 rounded-full bg-red-500 hover:bg-red-600 transition-all duration-300 shadow-xl shadow-red-500/20 flex items-center justify-center text-white"
               >
-                {isMicrophoneEnabled ? <X size={24} /> : <Mic size={24} />}
+                <PhoneOff size={24} />
               </Button>
               <p className="text-[10px] uppercase font-black tracking-widest text-center text-white/40">
-                {isMicrophoneEnabled ? "Agent is listening..." : "Mic Off"}
+                End Call
               </p>
             </motion.div>
           ) : (
-            <div className="relative">
-              <input 
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && chatInput.trim()) {
-                    sendChat(chatInput);
-                    setChatInput("");
-                  }
-                }}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-6 py-4 text-white text-sm focus:border-blue-500/40 outline-none pr-14"
-                placeholder="Type your message..."
-              />
-              <Button 
-                onClick={() => { if(chatInput.trim()) { sendChat(chatInput); setChatInput(""); } }} 
-                className="absolute right-2 top-2 h-10 w-10 bg-white text-black rounded-full"
+            <div className="flex items-center gap-4">
+               <div className="relative flex-1">
+                <input 
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && chatInput.trim()) {
+                      sendChat(chatInput);
+                      setChatInput("");
+                    }
+                  }}
+                  className="w-full bg-white/[0.04] border border-white/10 rounded-2xl px-6 py-4 text-white text-sm focus:border-blue-500/40 outline-none pr-14"
+                  placeholder="Type your message..."
+                />
+                <Button 
+                  onClick={() => { if(chatInput.trim()) { sendChat(chatInput); setChatInput(""); } }} 
+                  className="absolute right-2 top-2 h-10 w-10 bg-white text-black rounded-full"
+                >
+                  <Send size={16} />
+                </Button>
+              </div>
+              <Button
+                onClick={onEndCall}
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-full transition-all shrink-0"
               >
-                <Send size={16} />
+                <PhoneOff size={20} />
               </Button>
             </div>
           )}
@@ -251,4 +306,3 @@ function AgentInterface({ mode, setMode }: { mode: "voice" | "chat", setMode: (m
     </>
   );
 }
-export default TestAgent;
