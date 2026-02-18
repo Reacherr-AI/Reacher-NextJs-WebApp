@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ message: 'Invalid request body.' }, { status: 400 });
   }
 
-  const res = await apiFetch(`/api/v1/publish-voice-agent/${agentId}`, {
+  const res = await apiFetch(`/api/v1/update-voice-agent/${agentId}`, {
     method: 'PATCH',
     body: JSON.stringify(raw),
   });
