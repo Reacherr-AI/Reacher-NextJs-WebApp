@@ -78,6 +78,24 @@ export interface VoiceMailOption {
   text?: string;
 }
 
+export interface LegacyVoicemailOption {
+  action?: HungupVoiceMailAction | PromptVoicemailAction | StaticTextVoicemailAction;
+}
+
+export interface SnakeCaseVoicemailOption {
+  action?: {
+    type?: VoicemailActionType;
+    text?: string;
+    prompt?: string;
+  };
+}
+
+export interface IvrOption {
+  action: {
+    type: 'hangup';
+  };
+}
+
 export interface VoiceAgentDto {
   agentId?: string;
   version?: number;
@@ -87,6 +105,12 @@ export interface VoiceAgentDto {
   isPublished?: boolean;
   voiceId?: string;
   voiceModel?: string;
+  responsiveness?: number;
+  interruptionSensitivity?: number;
+  reminderTriggerTimeoutMs?: number;
+  reminderMaxCount?: number;
+  ambientSound?: string;
+  ambientSoundVolume?: number;
   sttProvider?: string;
   boostedKeyWords?: string[];
   ttsConfig?: TtsConfig;
@@ -97,13 +121,21 @@ export interface VoiceAgentDto {
   webhookTimeoutMs?: number;
   maxCallDurationMs?: number;
   ringTimeOutMs?: number;
+  enableVoiceMailDetection?: boolean;
   enableVoicemailDetection?: boolean;
+  enable_voicemail_detection?: boolean;
   voiceMailDetectionTimeOutMs?: number;
   voiceMailMessage?: string;
+  voiceMailDetection?: LegacyVoicemailOption;
+  voicemailOption?: VoiceMailOption;
   voiceMailOption?: VoiceMailOption;
+  voicemail_option?: SnakeCaseVoicemailOption | null;
+  ivrOption?: IvrOption | null;
+  ivr_option?: IvrOption | null;
   analysisSuccessfulPrompt?: string;
   analysisSummaryPrompt?: string;
   postCallAnalysisData?: PostCallField[] | { data?: PostCallField[] };
+  postCallAnalysisModel?: string;
   versionDescription?: string;
   piiConfig?: PiiConfig;
   allowUserDtmf?: boolean;
@@ -162,6 +194,7 @@ export interface EndCallTool extends Tool {
   description?: string;
   speakDuringExecution?: boolean;
   executionMessageDescription?: string;
+  executionMessageType?: 'prompt' | 'static_text';
 }
 
 export interface McpTool extends Tool {
@@ -232,6 +265,7 @@ export interface ReacherrLlmDto {
   kbConfig?: KbConfig;
   knowledgeBaseIds?: string[];
   startSpeaker?: StartSpeaker;
+  beginMessageDelay?: number;
   beginMessage?: string;
   generalPrompt?: string;
   generalTools?: GeneralTool[];

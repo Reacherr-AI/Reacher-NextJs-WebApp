@@ -46,11 +46,6 @@ const getTemplates = async () => {
 };
 
 
-// ------------------------------------------------------------------
-// ---------------------- GET AGENTS --------------------------------
-// ------------------------------------------------------------------
-
-
 const getAgentsPage = async (page: number) => {
   const safePage = Number.isFinite(page) && page >= 0 ? Math.floor(page) : 0;
   const res = await apiFetch(

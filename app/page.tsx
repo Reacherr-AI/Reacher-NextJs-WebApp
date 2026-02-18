@@ -110,7 +110,7 @@ export default async function Home() {
             </div>
           </div>
         </div>
-        <SiteNavbar activeLabel="Home" showDashboard={isLoggedIn}/>
+        <SiteNavbar activeLabel="Home" showDashboard={isLoggedIn} />
         <div className="relative z-10 w-full flex flex-col items-center">
           <section className="mt-16 flex flex-col items-center justify-center text-center text-white sm:flex-1">
             <div className="max-w-3xl">
@@ -119,7 +119,7 @@ export default async function Home() {
               </p> */}
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-white">
                 AI Voice Agents That Handle Calls For You
-            </h1>
+              </h1>
               <p className="mt-6 text-sm font-medium text-white/60 sm:text-base">
                 #1 AI Voice Agent Platform for Automating Calls
               </p>
@@ -149,14 +149,14 @@ export default async function Home() {
         <Marquee
           className="mt-8 sm:mt-10 w-full opacity-70 hover:opacity-100 transition-opacity duration-500"
           duration={35}
-          gap="10rem"
+          gap="2rem"
           pauseOnHover
           fade
         >
           {brandLogos.map((brand) => (
             <div
               key={brand.name}
-              className="relative h-14 sm:h-20 lg:h-24 w-[160px] sm:w-[220px] lg:w-[260px] flex-shrink-0"
+              className="relative h-14 sm:h-20 lg:h-12 w-[160px] sm:w-[220px] lg:w-[260px] flex-shrink-0"
             >
               <Image
                 src={brand.src}
