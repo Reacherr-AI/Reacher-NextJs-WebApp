@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './_components/app-sidebar';
 import { getAccessToken } from '@/lib/auth/auth-cookies';
 import { decodeJwtPayload } from '@/lib/auth/jwt-payload';
+import AgentPublishButton from './agents/_components/agent-publish-button';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 
@@ -40,6 +41,8 @@ export default async function CoreLayout({
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">Reacherr</p>
           </div>
+
+          <AgentPublishButton />
         </header>
         {children}
       </main>

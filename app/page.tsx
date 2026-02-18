@@ -149,14 +149,14 @@ export default async function Home() {
         <Marquee
           className="mt-8 sm:mt-10 w-full opacity-70 hover:opacity-100 transition-opacity duration-500"
           duration={35}
-          gap="10rem"
+          gap="2rem"
           pauseOnHover
           fade
         >
           {brandLogos.map((brand) => (
             <div
               key={brand.name}
-              className="relative h-14 sm:h-20 lg:h-24 w-[160px] sm:w-[220px] lg:w-[260px] flex-shrink-0"
+              className="relative h-14 sm:h-20 lg:h-12 w-[160px] sm:w-[220px] lg:w-[260px] flex-shrink-0"
             >
               <Image
                 src={brand.src}
