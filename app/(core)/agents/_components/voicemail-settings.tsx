@@ -15,7 +15,6 @@ type VoicemailSettingsProps = {
   onOptionTypeChange: (nextType: VoiceMailActionType) => void;
   onTextChange: (text: string) => void;
   onIvrHangupEnabledChange: (enabled: boolean) => void;
-  onSave: () => void;
 };
 
 export function VoicemailSettings({
@@ -29,7 +28,6 @@ export function VoicemailSettings({
   onOptionTypeChange,
   onTextChange,
   onIvrHangupEnabledChange,
-  onSave,
 }: VoicemailSettingsProps) {
   const resolvedType: VoiceMailActionType = optionType ?? 'hangup';
   const isLeaveMessage = resolvedType === 'prompt' || resolvedType === 'static_text';
@@ -114,17 +112,6 @@ export function VoicemailSettings({
           Hang up if an IVR system is detected in the first 3 minutes.
         </p>
         <Switch checked={ivrHangupEnabled} onCheckedChange={onIvrHangupEnabledChange} />
-      </div>
-
-      <div className="flex flex-wrap gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving || !dirty}
-          className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {saving ? 'Saving agent…' : 'Save agent'}
-        </button>
       </div>
     </div>
   );

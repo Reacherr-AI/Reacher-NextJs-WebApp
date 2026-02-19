@@ -1,8 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import * as RPNInput from 'react-phone-number-input';
-import flags from 'react-phone-number-input/flags';
 import type { KnowledgeBaseDto, ReacherrLlmDto, VoiceAgentDto } from '@/types';
 import { BeginMessageSettings } from './begin-message-settings';
 import { LlmModelSelect } from './llm-model-select';
@@ -12,26 +10,29 @@ import { LlmTemperatureSettings } from './llm-temperature-settings';
 import { SpeechSettings } from './speech-settings';
 import { VoicemailSettings } from './voicemail-settings';
 import {
+  CallTimingSettings,
+  normalizeCallTimingMs,
+} from './call-timing-settings';
+import { WebhookSettings } from './webhook-settings';
+import { PostCallSettings, type PostCallDraft } from './post-call-settings';
+import { TtsModelSettings } from './tts-model-settings';
+import {
   conversationConfigStoredResults,
   getLLMProviders,
 } from '../_lib/conversation-config';
-import { KNOWN_POST_CALL_FIELD_TYPES, type KnownPostCallFieldType, type PostCallField } from '@/types';
+import { type PostCallField } from '@/types';
 import {
   BookOpen,
   Boxes,
-  CheckCircle2,
   ChevronRight,
   Code,
-  Hash,
   ListChecks,
   PhoneCall,
   Pencil,
   Plus,
   Shield,
   Speech,
-  Text,
   Trash2,
-  Voicemail,
   Webhook,
   Wrench,
 } from 'lucide-react';
@@ -45,7 +46,6 @@ type PiiModeType = NonNullable<NonNullable<VoiceAgentDto['piiConfig']>['mode']>;
 type PiiCategoriesType = NonNullable<NonNullable<VoiceAgentDto['piiConfig']>['categories']>;
 type PiiCategoryType = PiiCategoriesType[number];
 type UiLanguageCode = NonNullable<VoiceAgentDto['languageEnum']>;
-type UiCountry = RPNInput.Country;
 type EditorConfigDto = {
   llmModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
   ttsModels?: Array<{ modelId?: string; provider?: string; displayName?: string }>;
@@ -85,14 +85,6 @@ const inferVoiceProviderFromModel = (voiceModel: string | undefined): string => 
   return '';
 };
 
-const defaultVoiceIdForProvider = (provider: string | undefined): string => {
-  const normalized = (provider ?? '').trim().toLowerCase();
-  if (normalized === 'minimax') return 'minimax-Crystal';
-  if (normalized === 'openai') return 'openai-Anna';
-  if (normalized === 'elevenlabs') return '11labs-Andrew';
-  return '';
-};
-
 const isPlaceholderVoiceId = (voiceId: string | undefined): boolean => {
   const normalized = (voiceId ?? '').trim().toLowerCase();
   if (!normalized) return false;
@@ -103,7 +95,6 @@ type SectionId =
   | 'call'
   | 'speech'
   | 'webhooks'
-  | 'voicemail'
   | 'security'
   | 'postcall'
   | 'llm_kb'
@@ -135,9 +126,6 @@ const DTMF_TIMEOUT_MIN_MS = 1000;
 const DTMF_TIMEOUT_MAX_MS = 10000;
 const DTMF_TIMEOUT_DEFAULT_MS = 5500;
 const DTMF_TIMEOUT_STEP_MS = 100;
-const WEBHOOK_TIMEOUT_MIN_SECONDS = 1;
-const WEBHOOK_TIMEOUT_MAX_SECONDS = 30;
-const WEBHOOK_TIMEOUT_DEFAULT_SECONDS = 15;
 const DTMF_TERMINATION_KEYS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '#', '*'] as const;
 
 const resolveDefaultLlmModelValue = (options: Array<{ label: string; value: string }>): string => {
@@ -304,6 +292,40 @@ const isVoiceLanguageMismatchError = (message: string): boolean => {
   return normalized.includes('only supports') && normalized.includes('cannot be used for');
 };
 
+const isVoiceProviderMismatchError = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('provider mismatch') ||
+    (normalized.includes('voice') &&
+      normalized.includes('model') &&
+      normalized.includes('is from') &&
+      normalized.includes('but'))
+  );
+};
+
+const validateTtsProviderMatch = (
+  voiceModel: string | undefined,
+  voiceId: string | undefined
+): string | null => {
+  const model = (voiceModel ?? '').trim();
+  const voice = (voiceId ?? '').trim();
+  if (!model || !voice) return null;
+
+  const modelProvider = inferVoiceProviderFromModel(model);
+  const voiceProvider = inferVoiceProviderFromVoiceId(voice);
+  if (!modelProvider || !voiceProvider || modelProvider === voiceProvider) return null;
+
+  return `Selected Voice ID '${voice}' is from ${voiceProvider}, but TTS model '${model}' is from ${modelProvider}. Please select a voice and TTS model from the same provider.`;
+};
+
+const normalizeAgentSaveErrorMessage = (message: string): string => {
+  if (isVoiceProviderMismatchError(message)) {
+    return 'Selected Voice ID and TTS model are from different providers. Please choose a matching TTS model for the selected voice.';
+  }
+  if (isVoiceLanguageMismatchError(message)) return message;
+  return message;
+};
+
 const sanitizeVoiceMailOption = (value: unknown): VoiceAgentDto['voiceMailOption'] => {
   if (!isRecord(value)) return undefined;
   const rawType = value.voiceMailOptionType;
@@ -425,6 +447,9 @@ const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
     language: languageEnum,
     userDtmfOption,
     userDtmfOptions: userDtmfOption,
+    maxCallDurationMs: normalizeCallTimingMs(withVoicemail.maxCallDurationMs),
+    ringTimeOutMs: normalizeCallTimingMs(withVoicemail.ringTimeOutMs),
+    endCallAfterSilenceMs: normalizeCallTimingMs(withVoicemail.endCallAfterSilenceMs),
     piiConfig: withVoicemail.piiConfig
       ? {
         ...withVoicemail.piiConfig,
@@ -433,15 +458,6 @@ const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
       : undefined,
     postCallAnalysisModel,
     postCallAnalysisData: normalizedPostCall,
-    ttsConfig:
-      withVoicemail.ttsConfig ??
-      (withVoicemail.voiceId || withVoicemail.voiceModel
-        ? {
-          provider: '',
-          model: withVoicemail.voiceModel ?? '',
-          voiceId: withVoicemail.voiceId ?? '',
-        }
-        : undefined),
   };
 };
 
@@ -479,27 +495,10 @@ const buildAgentPayload = (draft: VoiceAgentDto): VoiceAgentDto => {
     };
   }
 
-  if (payload.ttsConfig?.voiceId) payload.voiceId = payload.ttsConfig.voiceId;
-  if (payload.ttsConfig?.model) payload.voiceModel = payload.ttsConfig.model;
-
-  const modelProvider = inferVoiceProviderFromModel(payload.voiceModel);
-  const voiceProvider = inferVoiceProviderFromVoiceId(payload.voiceId);
-  if (modelProvider && voiceProvider && modelProvider !== voiceProvider) {
-    payload.voiceId = undefined;
-    if (payload.ttsConfig) payload.ttsConfig.voiceId = '';
-  }
-
-  if (!payload.voiceId && modelProvider) {
-    const autoVoiceId = defaultVoiceIdForProvider(modelProvider);
-    if (autoVoiceId) {
-      payload.voiceId = autoVoiceId;
-      if (payload.ttsConfig) payload.ttsConfig.voiceId = autoVoiceId;
-    }
-  }
-
   if (isPlaceholderVoiceId(payload.voiceId)) {
     payload.voiceId = undefined;
   }
+  (payload as unknown as Record<string, unknown>).ttsConfig = undefined;
 
   const normalizedEnableVoicemailDetection =
     typeof payload.enableVoicemailDetection === 'boolean'
@@ -636,7 +635,6 @@ const SECTIONS: {
     { id: 'call', label: 'Call Settings', group: 'agent' },
     { id: 'speech', label: 'Speech Settings', group: 'agent' },
     { id: 'webhooks', label: 'Webhook Settings', group: 'agent' },
-    { id: 'voicemail', label: 'Call Setting', group: 'agent' },
     { id: 'security', label: 'Security & DTMF', group: 'agent' },
     { id: 'postcall', label: 'Post-Call Extraction', group: 'agent' },
     { id: 'llm_kb', label: 'Knowledge Base', group: 'llm' },
@@ -644,27 +642,6 @@ const SECTIONS: {
     { id: 'llm_mcps', label: 'LLM: MCPs', group: 'llm', disabled: true },
     { id: 'raw', label: 'Raw JSON', group: 'advanced' },
   ];
-
-const LANGUAGE_OPTIONS: Array<{ code: UiLanguageCode; label: string; country: UiCountry }> = [
-  { code: 'en', label: 'English', country: 'US' },
-  { code: 'es', label: 'Spanish', country: 'ES' },
-  { code: 'fr', label: 'French', country: 'FR' },
-  { code: 'de', label: 'German', country: 'DE' },
-  { code: 'it', label: 'Italian', country: 'IT' },
-  { code: 'pt', label: 'Portuguese', country: 'PT' },
-  { code: 'zh', label: 'Chinese', country: 'CN' },
-  { code: 'ja', label: 'Japanese', country: 'JP' },
-  { code: 'ko', label: 'Korean', country: 'KR' },
-  { code: 'hi', label: 'Hindi', country: 'IN' },
-  { code: 'bn', label: 'Bengali', country: 'BD' },
-  { code: 'gu', label: 'Gujarati', country: 'IN' },
-  { code: 'kn', label: 'Kannada', country: 'IN' },
-  { code: 'ml', label: 'Malayalam', country: 'IN' },
-  { code: 'mr', label: 'Marathi', country: 'IN' },
-  { code: 'pa', label: 'Punjabi', country: 'IN' },
-  { code: 'ta', label: 'Tamil', country: 'IN' },
-  { code: 'te', label: 'Telugu', country: 'IN' },
-];
 
 const PII_CATEGORY_GROUPS: Array<{
   title: string;
@@ -760,7 +737,6 @@ export function AgentConfigEditor({
   const [ttsDraftModel, setTtsDraftModel] = React.useState('');
   const [ttsDraftVoiceId, setTtsDraftVoiceId] = React.useState('');
   const [ttsVoiceProviderFilter, setTtsVoiceProviderFilter] = React.useState('all');
-  type PostCallDraft = PostCallField & { choices?: string[]; examples?: string[] };
   const [postCallDraft, setPostCallDraft] = React.useState<PostCallDraft>({
     type: 'string',
     name: '',
@@ -837,6 +813,11 @@ export function AgentConfigEditor({
       setError(voicemailError);
       return;
     }
+    const ttsProviderError = validateTtsProviderMatch(agentDraft.voiceModel, agentDraft.voiceId);
+    if (ttsProviderError) {
+      setError(ttsProviderError);
+      return;
+    }
     setSaving('agent');
     setError(null);
     try {
@@ -844,7 +825,7 @@ export function AgentConfigEditor({
       const url = `/api/agents/update${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ''}`;
       const result = await patchJson<VoiceAgentDto>(url, buildAgentPayload(agentDraft));
       if (!result.ok) {
-        setError(result.message);
+        setError(normalizeAgentSaveErrorMessage(result.message));
         return;
       }
       const normalized = normalizeAgentForEditor(result.data);
@@ -918,6 +899,11 @@ export function AgentConfigEditor({
       setError(voicemailError);
       return;
     }
+    const ttsProviderError = validateTtsProviderMatch(agentDraft.voiceModel, agentDraft.voiceId);
+    if (ttsProviderError) {
+      setError(ttsProviderError);
+      return;
+    }
 
     setSaving('all');
     setError(null);
@@ -927,7 +913,7 @@ export function AgentConfigEditor({
         const url = `/api/agents/update${agentId ? `?agentId=${encodeURIComponent(agentId)}` : ''}`;
         const agentResult = await patchJson<VoiceAgentDto>(url, buildAgentPayload(agentDraft));
         if (!agentResult.ok) {
-          setError(agentResult.message);
+          setError(normalizeAgentSaveErrorMessage(agentResult.message));
           return;
         }
         const normalized = normalizeAgentForEditor(agentResult.data);
@@ -962,27 +948,9 @@ export function AgentConfigEditor({
 
   const llmSectionsEnabled = Boolean(llmDraft) && Boolean(llmId);
   const piiCategories = (agentDraft.piiConfig?.categories ?? []) as PiiCategoriesType;
-  const configuredLanguages = React.useMemo(() => {
-    if (!Array.isArray(initialConfig?.languages) || initialConfig.languages.length === 0) return [];
-    return initialConfig.languages
-      .filter((entry): entry is { code: string; name?: string } => typeof entry?.code === 'string')
-      .map((entry) => {
-        const fallback = LANGUAGE_OPTIONS.find((opt) => opt.code === (entry.code as UiLanguageCode));
-        return {
-          code: entry.code as UiLanguageCode,
-          label: entry.name?.trim() || fallback?.label || entry.code,
-          country: fallback?.country,
-        };
-      });
-  }, [initialConfig?.languages]);
-  const languageOptions = configuredLanguages.length > 0 ? configuredLanguages : LANGUAGE_OPTIONS;
   const selectedLanguageCode = (agentDraft.languageEnum ??
     agentDraft.language ??
     'en') as UiLanguageCode;
-  const selectedLanguage =
-    languageOptions.find((option) => option.code === selectedLanguageCode) ?? languageOptions[0];
-  const SelectedLanguageFlag =
-    selectedLanguage?.country ? flags[selectedLanguage.country as UiCountry] : undefined;
   const configDrivenLlmModelOptions = React.useMemo(() => {
     if (!llmDraft || !Array.isArray(initialConfig?.llmModels) || initialConfig.llmModels.length === 0) {
       return [];
@@ -1156,7 +1124,7 @@ export function AgentConfigEditor({
   React.useEffect(() => {
     setKbPickerOpen(false);
   }, [active]);
-  const selectedTtsModel = agentDraft.ttsConfig?.model ?? agentDraft.voiceModel;
+  const selectedTtsModel = agentDraft.voiceModel;
   const ttsModelOptions = React.useMemo(() => {
     const currentModel = selectedTtsModel;
     if (!Array.isArray(initialConfig?.ttsModels) || initialConfig.ttsModels.length === 0) {
@@ -1227,9 +1195,17 @@ export function AgentConfigEditor({
     () => filteredTtsVoices.filter((voice) => voice.recommended).slice(0, 6),
     [filteredTtsVoices]
   );
+  const getCatalogVoiceIdForProvider = React.useCallback(
+    (provider: string | undefined): string => {
+      const providerLower = (provider ?? '').trim().toLowerCase();
+      if (!providerLower) return '';
+      return (ttsVoiceCatalog.find((voice) => voice.provider === providerLower)?.voiceId ?? '').trim();
+    },
+    [ttsVoiceCatalog]
+  );
   React.useEffect(() => {
-    const currentModel = (agentDraft.ttsConfig?.model ?? agentDraft.voiceModel ?? '').trim();
-    const currentVoiceId = (agentDraft.ttsConfig?.voiceId ?? agentDraft.voiceId ?? '').trim();
+    const currentModel = (agentDraft.voiceModel ?? '').trim();
+    const currentVoiceId = (agentDraft.voiceId ?? '').trim();
     const defaultModel = currentModel || ttsModelOptions[0]?.value || '';
     if (!defaultModel) return;
 
@@ -1237,7 +1213,7 @@ export function AgentConfigEditor({
     const provider =
       typeof matchedModel?.provider === 'string'
         ? matchedModel.provider
-        : (agentDraft.ttsConfig?.provider ?? '') || inferVoiceProviderFromModel(defaultModel);
+        : inferVoiceProviderFromModel(defaultModel);
 
     let defaultVoiceId = currentVoiceId;
     if (!defaultVoiceId) {
@@ -1246,8 +1222,7 @@ export function AgentConfigEditor({
         (providerLower
           ? (ttsVoiceCatalog.find((voice) => voice.provider === providerLower)?.voiceId ?? '').trim()
           : '') ||
-        (ttsVoiceCatalog[0]?.voiceId ?? '').trim() ||
-        defaultVoiceIdForProvider(provider);
+        (ttsVoiceCatalog[0]?.voiceId ?? '').trim();
     }
 
     if (currentModel === defaultModel && currentVoiceId === defaultVoiceId) return;
@@ -1256,20 +1231,8 @@ export function AgentConfigEditor({
       ...prev,
       voiceModel: defaultModel,
       voiceId: defaultVoiceId || undefined,
-      ttsConfig: {
-        ...(prev.ttsConfig ?? {
-          provider,
-          voiceId: prev.voiceId ?? '',
-        }),
-        provider,
-        model: defaultModel,
-        voiceId: defaultVoiceId || '',
-      },
     }));
   }, [
-    agentDraft.ttsConfig?.model,
-    agentDraft.ttsConfig?.provider,
-    agentDraft.ttsConfig?.voiceId,
     agentDraft.voiceId,
     agentDraft.voiceModel,
     initialConfig?.ttsModels,
@@ -1282,8 +1245,8 @@ export function AgentConfigEditor({
     const provider =
       typeof matched?.provider === 'string'
         ? matched.provider
-        : (agentDraft.ttsConfig?.provider ?? '') || inferVoiceProviderFromModel(model);
-    const previousVoiceId = (agentDraft.ttsConfig?.voiceId ?? agentDraft.voiceId ?? '').trim();
+        : inferVoiceProviderFromModel(model);
+    const previousVoiceId = (agentDraft.voiceId ?? '').trim();
     const previousVoiceProvider = inferVoiceProviderFromVoiceId(previousVoiceId);
     const explicitVoiceId = ttsDraftVoiceId.trim();
     const voiceId =
@@ -1293,9 +1256,14 @@ export function AgentConfigEditor({
         previousVoiceProvider &&
         provider.toLowerCase() === previousVoiceProvider.toLowerCase()
         ? previousVoiceId
-        : defaultVoiceIdForProvider(provider));
+        : getCatalogVoiceIdForProvider(provider));
     if (!model) {
       setError('TTS model is required.');
+      return;
+    }
+    const providerMismatch = validateTtsProviderMatch(model, voiceId);
+    if (providerMismatch) {
+      setError(providerMismatch);
       return;
     }
     if (voiceId) {
@@ -1315,28 +1283,35 @@ export function AgentConfigEditor({
       ...prev,
       voiceModel: model,
       voiceId: voiceId || undefined,
-      ttsConfig: {
-        ...(prev.ttsConfig ?? {
-          provider,
-          voiceId: prev.voiceId ?? '',
-        }),
-        provider,
-        model,
-        voiceId: voiceId || '',
-      },
     }));
     setError(null);
     setTtsPickerOpen(false);
   };
   const openTtsPicker = () => {
     setTtsDraftModel(selectedTtsModel ?? '');
-    setTtsDraftVoiceId(agentDraft.ttsConfig?.voiceId ?? agentDraft.voiceId ?? '');
+    setTtsDraftVoiceId(agentDraft.voiceId ?? '');
     setTtsVoiceProviderFilter(
-      (agentDraft.ttsConfig?.provider ?? inferVoiceProviderFromModel(selectedTtsModel)).trim().toLowerCase() || 'all'
+      inferVoiceProviderFromModel(selectedTtsModel).trim().toLowerCase() || 'all'
     );
     setTtsPickerOpen(true);
   };
-  const selectedVoiceId = (agentDraft.ttsConfig?.voiceId ?? agentDraft.voiceId ?? '').trim();
+  const handleTtsDraftModelChange = (nextModel: string) => {
+    const nextProvider =
+      initialConfig?.ttsModels?.find((model) => model?.modelId === nextModel)?.provider ?? '';
+    const currentVoiceProvider = inferVoiceProviderFromVoiceId(ttsDraftVoiceId);
+    setTtsDraftModel(nextModel);
+    if (
+      nextProvider &&
+      currentVoiceProvider &&
+      nextProvider.toLowerCase() !== currentVoiceProvider.toLowerCase()
+    ) {
+      setTtsDraftVoiceId(getCatalogVoiceIdForProvider(nextProvider));
+    }
+    if (nextProvider.trim().length > 0) {
+      setTtsVoiceProviderFilter(nextProvider.trim().toLowerCase());
+    }
+  };
+  const selectedVoiceId = (agentDraft.voiceId ?? '').trim();
   const selectedTtsVoice =
     selectedVoiceId.length > 0
       ? ttsVoiceCatalog.find((voice) => voice.voiceId.toLowerCase() === selectedVoiceId.toLowerCase()) ?? null
@@ -1443,20 +1418,6 @@ export function AgentConfigEditor({
     setPostCallEditorOpen(false);
   };
 
-  const postCallIcon = (type: string) => {
-    switch (type) {
-      case 'boolean':
-        return <CheckCircle2 className="size-5 text-white/70" />;
-      case 'enum':
-        return <ListChecks className="size-5 text-white/70" />;
-      case 'number':
-        return <Hash className="size-5 text-white/70" />;
-      case 'string':
-      default:
-        return <Text className="size-5 text-white/70" />;
-    }
-  };
-
   const sectionIcon = (id: SectionId) => {
     switch (id) {
       case 'call':
@@ -1465,8 +1426,6 @@ export function AgentConfigEditor({
         return <Webhook className="size-4 text-white/60" />;
       case 'speech':
         return <Speech className="size-4 text-white/60" />;
-      case 'voicemail':
-        return <Voicemail className="size-4 text-white/60" />;
       case 'security':
         return <Shield className="size-4 text-white/60" />;
       case 'postcall':
@@ -1538,124 +1497,95 @@ export function AgentConfigEditor({
 
             <div className="mt-8">
               {active === 'call' ? (
-                <div className="grid gap-4">
-                  <div className="grid gap-4">
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        Max Call Duration (ms)
-                      </span>
-                      <input
-                        inputMode="numeric"
-                        value={agentDraft.maxCallDurationMs ?? ''}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            maxCallDurationMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        Ring Timeout (ms)
-                      </span>
-                      <input
-                        inputMode="numeric"
-                        value={agentDraft.ringTimeOutMs ?? ''}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            ringTimeOutMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      />
-                    </label>
-                    <label className="grid gap-2">
-                      <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                        Webhook Timeout (ms)
-                      </span>
-                      <input
-                        inputMode="numeric"
-                        value={agentDraft.webhookTimeoutMs ?? ''}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            webhookTimeoutMs: e.target.value === '' ? undefined : Number(e.target.value),
-                          }))
-                        }
-                        className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      />
-                    </label>
-                  </div>
+                <div className="grid gap-8">
 
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={saveAgent}
-                      disabled={saving !== 'idle' || !agentDirty}
-                      className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {saving === 'agent' ? 'Saving agent…' : 'Save agent'}
-                    </button>
-                  </div>
+                  <VoicemailSettings
+                    enabled={Boolean(agentDraft.enableVoicemailDetection)}
+                    optionType={agentDraft.voiceMailOption?.voiceMailOptionType as VoiceMailActionType | undefined}
+                    text={agentDraft.voiceMailOption?.text ?? ''}
+                    ivrHangupEnabled={agentDraft.ivrOption?.action?.type === 'hangup'}
+                    saving={saving === 'agent'}
+                    dirty={agentDirty}
+                    onEnabledChange={(enabled) =>
+                      setAgentDraft((prev) => ({
+                        ...prev,
+                        enableVoicemailDetection: enabled,
+                        voiceMailOption: enabled
+                          ? prev.voiceMailOption ?? { voiceMailOptionType: 'hangup' }
+                          : prev.voiceMailOption,
+                      }))
+                    }
+                    onOptionTypeChange={(nextType) =>
+                      setAgentDraft((prev) => ({
+                        ...prev,
+                        voiceMailOption: nextType === 'hangup'
+                          ? { voiceMailOptionType: 'hangup' }
+                          : {
+                            voiceMailOptionType: nextType,
+                            text: prev.voiceMailOption?.text ?? '',
+                          },
+                      }))
+                    }
+                    onTextChange={(nextText) =>
+                      setAgentDraft((prev) => ({
+                        ...prev,
+                        voiceMailOption: {
+                          voiceMailOptionType:
+                            prev.voiceMailOption?.voiceMailOptionType === 'prompt' ||
+                              prev.voiceMailOption?.voiceMailOptionType === 'static_text'
+                              ? prev.voiceMailOption.voiceMailOptionType
+                              : 'static_text',
+                          text: nextText,
+                        },
+                      }))
+                    }
+                    onIvrHangupEnabledChange={(enabled) =>
+                      setAgentDraft((prev) => {
+                        if (enabled) {
+                          return {
+                            ...prev,
+                            ivrOption: { action: { type: 'hangup' } },
+                          };
+                        }
+                        const next = { ...prev };
+                        delete next.ivrOption;
+                        return next;
+                      })
+                    }
+                  />
+
+                  <CallTimingSettings
+                    maxCallDurationMs={agentDraft.maxCallDurationMs}
+                    ringTimeOutMs={agentDraft.ringTimeOutMs}
+                    endCallAfterSilenceMs={agentDraft.endCallAfterSilenceMs}
+                    onMaxCallDurationChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, maxCallDurationMs: next }))
+                    }
+                    onRingTimeOutChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, ringTimeOutMs: next }))
+                    }
+                    onEndCallAfterSilenceChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, endCallAfterSilenceMs: next }))
+                    }
+                  />
+
                 </div>
               ) : null}
 
               {active === 'webhooks' ? (
-                <div className="grid gap-4">
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                      Webhook URL
-                    </span>
-                    <input
-                      value={agentDraft.webhookUrl ?? ''}
-                      onChange={(e) =>
-                        setAgentDraft((prev) => ({ ...prev, webhookUrl: e.target.value }))
-                      }
-                      className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                      placeholder="https://example.com/webhook"
-                    />
-                  </label>
-
-                  <label className="grid gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                      Webhook Timeout ({Math.round((agentDraft.webhookTimeoutMs ?? WEBHOOK_TIMEOUT_DEFAULT_SECONDS * 1000) / 1000)}s)
-                    </span>
-                    <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
-                      <input
-                        type="range"
-                        min={WEBHOOK_TIMEOUT_MIN_SECONDS}
-                        max={WEBHOOK_TIMEOUT_MAX_SECONDS}
-                        step={1}
-                        value={Math.round((agentDraft.webhookTimeoutMs ?? WEBHOOK_TIMEOUT_DEFAULT_SECONDS * 1000) / 1000)}
-                        onChange={(e) =>
-                          setAgentDraft((prev) => ({
-                            ...prev,
-                            webhookTimeoutMs: Number(e.target.value) * 1000,
-                          }))
-                        }
-                        className="w-full accent-white"
-                      />
-                      <div className="mt-2 flex items-center justify-between text-xs text-white/50">
-                        <span>{WEBHOOK_TIMEOUT_MIN_SECONDS}s</span>
-                        <span>{WEBHOOK_TIMEOUT_MAX_SECONDS}s</span>
-                      </div>
-                    </div>
-                  </label>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={saveAgent}
-                      disabled={saving !== 'idle' || !agentDirty}
-                      className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {saving === 'agent' ? 'Saving agent…' : 'Save agent'}
-                    </button>
-                  </div>
-                </div>
+                <WebhookSettings
+                  webhookUrl={agentDraft.webhookUrl}
+                  webhookTimeoutMs={agentDraft.webhookTimeoutMs}
+                  saving={saving === 'agent'}
+                  dirty={agentDirty}
+                  onWebhookUrlChange={(value) =>
+                    setAgentDraft((prev) => ({ ...prev, webhookUrl: value }))
+                  }
+                  onWebhookTimeoutMsChange={(value) =>
+                    setAgentDraft((prev) => ({ ...prev, webhookTimeoutMs: value }))
+                  }
+                  onSave={saveAgent}
+                />
               ) : null}
 
               {active === 'speech' ? (
@@ -1685,64 +1615,6 @@ export function AgentConfigEditor({
                   }
                   onReminderMaxCountChange={(next) =>
                     setAgentDraft((prev) => ({ ...prev, reminderMaxCount: next }))
-                  }
-                  onSave={saveAgent}
-                />
-              ) : null}
-
-              {active === 'voicemail' ? (
-                <VoicemailSettings
-                  enabled={Boolean(agentDraft.enableVoicemailDetection)}
-                  optionType={agentDraft.voiceMailOption?.voiceMailOptionType as VoiceMailActionType | undefined}
-                  text={agentDraft.voiceMailOption?.text ?? ''}
-                  ivrHangupEnabled={agentDraft.ivrOption?.action?.type === 'hangup'}
-                  saving={saving === 'agent'}
-                  dirty={agentDirty}
-                  onEnabledChange={(enabled) =>
-                    setAgentDraft((prev) => ({
-                      ...prev,
-                      enableVoicemailDetection: enabled,
-                      voiceMailOption: enabled
-                        ? prev.voiceMailOption ?? { voiceMailOptionType: 'hangup' }
-                        : prev.voiceMailOption,
-                    }))
-                  }
-                  onOptionTypeChange={(nextType) =>
-                    setAgentDraft((prev) => ({
-                      ...prev,
-                      voiceMailOption: nextType === 'hangup'
-                        ? { voiceMailOptionType: 'hangup' }
-                        : {
-                          voiceMailOptionType: nextType,
-                          text: prev.voiceMailOption?.text ?? '',
-                        },
-                    }))
-                  }
-                  onTextChange={(nextText) =>
-                    setAgentDraft((prev) => ({
-                      ...prev,
-                      voiceMailOption: {
-                        voiceMailOptionType:
-                          prev.voiceMailOption?.voiceMailOptionType === 'prompt' ||
-                            prev.voiceMailOption?.voiceMailOptionType === 'static_text'
-                            ? prev.voiceMailOption.voiceMailOptionType
-                            : 'static_text',
-                        text: nextText,
-                      },
-                    }))
-                  }
-                  onIvrHangupEnabledChange={(enabled) =>
-                    setAgentDraft((prev) => {
-                      if (enabled) {
-                        return {
-                          ...prev,
-                          ivrOption: { action: { type: 'hangup' } },
-                        };
-                      }
-                      const next = { ...prev };
-                      delete next.ivrOption;
-                      return next;
-                    })
                   }
                   onSave={saveAgent}
                 />
@@ -1864,253 +1736,26 @@ export function AgentConfigEditor({
               ) : null}
 
               {active === 'postcall' ? (
-                <div className="grid gap-5">
-                  <div>
-                    <h3 className="text-base font-semibold">Post Call Data Retrieval</h3>
-                    <p className="mt-2 text-sm text-white/60">
-                      Define the information you need to extract from the call.
-                      <span className="text-white/40"> (Learn more)</span>
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3">
-                    {postCallFields.length === 0 ? (
-                      <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-white/60">
-                        No post-call fields yet. Add fields like call summary, success, or tags.
-                      </div>
-                    ) : (
-                      <div className="grid gap-3">
-                        {postCallFields.map((field, idx) => {
-                          const title =
-                            (typeof field.name === 'string' && field.name.trim().length > 0
-                              ? field.name.trim()
-                              : null) ?? `Field ${idx + 1}`;
-                          return (
-                            <div
-                              key={`post-call-field-${idx}-${field.type}-${title}`}
-                              className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3"
-                            >
-                              <div className="flex min-w-0 items-center gap-3">
-                                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                                  {postCallIcon(field.type)}
-                                </span>
-                                <div className="min-w-0 flex-1">
-                                  <p className="truncate text-sm font-semibold text-white/90">{title}</p>
-                                  <p className="truncate text-xs text-white/50">
-                                    {field.description ? `${field.description}` : ''}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="mt-3 flex items-center justify-end gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => openEditPostCallField(idx)}
-                                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-                                  aria-label="Edit field"
-                                >
-                                  <Pencil className="size-4" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => deletePostCallField(idx)}
-                                  className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
-                                  aria-label="Delete field"
-                                >
-                                  <Trash2 className="size-4" />
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={openCreatePostCallField}
-                      className="inline-flex w-fit items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-                    >
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-white/10 bg-black/30">
-                        <Plus className="size-5" />
-                      </span>
-                      Add
-                    </button>
-                    <div className="max-w-[360px] min-w-[240px]">
-                      <LlmModelSelect
-                        value={agentDraft.postCallAnalysisModel ?? DEFAULT_POST_CALL_ANALYSIS_MODEL}
-                        options={postCallAnalysisModelOptions}
-                        onValueChange={(model) =>
-                          setAgentDraft((prev) => ({ ...prev, postCallAnalysisModel: model }))
-                        }
-                        placeholder="Post-call model"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={saveAgent}
-                      disabled={saving !== 'idle' || !agentDirty}
-                      className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {saving === 'agent' ? 'Saving agent…' : 'Save agent'}
-                    </button>
-                  </div>
-
-                  {postCallEditorOpen ? (
-                    <div
-                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm"
-                      role="dialog"
-                      aria-modal="true"
-                      aria-label="Edit post-call field"
-                      onMouseDown={(event) => {
-                        if (event.target === event.currentTarget) setPostCallEditorOpen(false);
-                      }}
-                    >
-                      <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(900px_circle_at_70%_0%,rgba(248,248,248,0.08)_0%,rgba(56,66,218,0.25)_30%,rgba(12,14,55,0.85)_58%,rgba(0,0,0,1)_100%)] text-white shadow-[0_50px_160px_rgba(0,0,0,0.55)]">
-                        <div className="flex items-start justify-between gap-6 border-b border-white/10 px-7 py-6">
-                          <div>
-                            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/50">
-                              Post-Call Field
-                            </p>
-                            <h2 className="mt-3 text-2xl font-semibold">
-                              {editingPostCallIndex === null ? 'Add field' : 'Edit field'}
-                            </h2>
-                          </div>
-                          <button
-                            type="button"
-                            className="rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                            onClick={() => setPostCallEditorOpen(false)}
-                            aria-label="Close"
-                          >
-                            <span className="text-xl leading-none">×</span>
-                          </button>
-                        </div>
-
-                        <div className="grid gap-5 px-7 py-6">
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <label className="grid gap-2">
-                              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                                Type
-                              </span>
-                              <select
-                                value={postCallDraft.type}
-                                onChange={(e) =>
-                                  setPostCallDraft((prev) => ({
-                                    ...prev,
-                                    type: e.target.value as KnownPostCallFieldType,
-                                    choices:
-                                      e.target.value === 'enum' ? prev.choices : undefined,
-                                    examples:
-                                      e.target.value === 'string' ? prev.examples : undefined,
-                                  }))
-                                }
-                                className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                              >
-                                {KNOWN_POST_CALL_FIELD_TYPES.map((t) => (
-                                  <option key={`postcall-type-${t}`} value={t}>
-                                    {t}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="grid gap-2">
-                              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                                Name
-                              </span>
-                              <input
-                                value={postCallDraft.name ?? ''}
-                                onChange={(e) =>
-                                  setPostCallDraft((prev) => ({ ...prev, name: e.target.value }))
-                                }
-                                className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                                placeholder="Call Summary"
-                              />
-                            </label>
-                          </div>
-
-                          <label className="grid gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                              Description
-                            </span>
-                            <textarea
-                              value={postCallDraft.description ?? ''}
-                              onChange={(e) =>
-                                setPostCallDraft((prev) => ({
-                                  ...prev,
-                                  description: e.target.value,
-                                }))
-                              }
-                              className="min-h-28 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/90 outline-none transition focus:border-white/25"
-                              placeholder="What should the model extract?"
-                            />
-                          </label>
-
-                          {postCallDraft.type === 'enum' ? (
-                            <label className="grid gap-2">
-                              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                                Choices (one per line)
-                              </span>
-                              <textarea
-                                value={postCallDraft.choices?.join('\n') ?? ''}
-                                onChange={(e) => {
-                                  const choices = e.target.value
-                                    .split('\n')
-                                    .map((s) => s.trim())
-                                    .filter(Boolean);
-                                  setPostCallDraft((prev) => ({ ...prev, choices, examples: undefined }));
-                                }}
-                                className="min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-white/85 outline-none transition focus:border-white/25"
-                                placeholder="successful\nunsuccessful\nunknown"
-                              />
-                            </label>
-                          ) : null}
-
-                          {postCallDraft.type === 'string' ? (
-                            <label className="grid gap-2">
-                              <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                                Examples (one per line)
-                              </span>
-                              <textarea
-                                value={postCallDraft.examples?.join('\n') ?? ''}
-                                onChange={(e) => {
-                                  const examples = e.target.value
-                                    .split('\n')
-                                    .map((s) => s.trim())
-                                    .filter(Boolean);
-                                  setPostCallDraft((prev) => ({ ...prev, examples, choices: undefined }));
-                                }}
-                                className="min-h-24 rounded-2xl border border-white/10 bg-black/30 px-4 py-3 font-mono text-xs text-white/85 outline-none transition focus:border-white/25"
-                                placeholder="Customer requested reschedule\nAsked about pricing"
-                              />
-                            </label>
-                          ) : null}
-
-                          <div className="flex flex-wrap justify-end gap-3 pt-2">
-                            <button
-                              type="button"
-                              onClick={() => setPostCallEditorOpen(false)}
-                              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10"
-                            >
-                              Cancel
-                            </button>
-                            <button
-                              type="button"
-                              onClick={savePostCallField}
-                              className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/15 px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_60px_rgba(12,14,55,0.55)] transition hover:bg-white/20"
-                            >
-                              <CheckCircle2 className="size-4" />
-                              Save field
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                <PostCallSettings
+                  fields={postCallFields}
+                  postCallAnalysisModel={agentDraft.postCallAnalysisModel}
+                  postCallAnalysisModelOptions={postCallAnalysisModelOptions}
+                  saving={saving === 'agent'}
+                  dirty={agentDirty}
+                  editorOpen={postCallEditorOpen}
+                  editingIndex={editingPostCallIndex}
+                  draft={postCallDraft}
+                  onOpenCreate={openCreatePostCallField}
+                  onOpenEdit={openEditPostCallField}
+                  onDelete={deletePostCallField}
+                  onModelChange={(model) =>
+                    setAgentDraft((prev) => ({ ...prev, postCallAnalysisModel: model }))
+                  }
+                  onSave={saveAgent}
+                  onCloseEditor={() => setPostCallEditorOpen(false)}
+                  onDraftChange={setPostCallDraft}
+                  onSaveField={savePostCallField}
+                />
               ) : null}
 
               {active.startsWith('llm_') ? (
@@ -2359,38 +2004,7 @@ export function AgentConfigEditor({
                   </>
                 )}
               </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                    Language
-                  </p>
-                  <div className="mt-2 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/30 px-3 py-2">
-                    <span className="inline-flex h-5 w-7 items-center justify-center overflow-hidden rounded-sm border border-white/10 bg-white/5">
-                      {SelectedLanguageFlag ? <SelectedLanguageFlag title={selectedLanguage.label} /> : null}
-                    </span>
-                    <select
-                      value={selectedLanguageCode}
-                      onChange={(e) =>
-                        setAgentDraft((prev) => ({
-                          ...prev,
-                          languageEnum: e.target.value as UiLanguageCode,
-                          language: e.target.value as UiLanguageCode,
-                        }))
-                      }
-                      className="h-9 w-full bg-transparent text-sm text-white/90 outline-none"
-                    >
-                      {languageOptions.map((option) => (
-                        <option
-                          key={`agent-lang-${option.code}`}
-                          value={option.code}
-                          className="bg-black text-white"
-                        >
-                          {option.label} ({option.code})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
                     LLM Model
@@ -2415,50 +2029,26 @@ export function AgentConfigEditor({
                     />
                   </div>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                    TTS Model
-                  </p>
-                  <div
-                    className="mt-2 cursor-pointer rounded-2xl border border-white/10 bg-black/30 px-3 py-2 transition hover:border-white/20 hover:bg-white/5"
-                    role="button"
-                    tabIndex={0}
-                    onClick={openTtsPicker}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        openTtsPicker();
-                      }
-                    }}
-                    aria-label="Open TTS model and voice selection"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0 flex items-center gap-3">
-                        {selectedTtsVoice?.avatarUrl ? (
-                          <img
-                            // src={selectedTtsVoice.avatarUrl}
-                            // FAKE_IMAGE FOR NOW UNTIL WE UPDATE IMAGE IN S3
-                            src={'/images/testimonials/testimonial-7.svg'}
-                            alt={selectedTtsVoice.voiceName || selectedTtsVoice.voiceId}
-                            className="h-9 w-9 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold text-white/90">
-                            {(selectedTtsVoice?.voiceName || selectedVoiceId || 'V').slice(0, 1).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <p className="truncate text-sm text-white/90">
-                            {selectedTtsVoice?.voiceName || selectedVoiceId || 'No voice selected'}
-                          </p>
-                          <p className="truncate text-xs text-white/55">
-                            {selectedTtsVoice?.provider || selectedTtsModel || 'Select a voice'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <TtsModelSettings
+                  selectedTtsVoice={selectedTtsVoice}
+                  selectedVoiceId={selectedVoiceId}
+                  selectedTtsModel={selectedTtsModel ?? ''}
+                  ttsPickerOpen={ttsPickerOpen}
+                  ttsDraftModel={ttsDraftModel}
+                  ttsDraftVoiceId={ttsDraftVoiceId}
+                  ttsVoiceProviderFilter={ttsVoiceProviderFilter}
+                  ttsModelOptions={ttsModelOptions}
+                  ttsVoiceProviderTabs={ttsVoiceProviderTabs}
+                  recommendedTtsVoices={recommendedTtsVoices}
+                  filteredTtsVoices={filteredTtsVoices}
+                  errorMessage={error}
+                  onOpenPicker={openTtsPicker}
+                  onClosePicker={() => setTtsPickerOpen(false)}
+                  onSaveSelection={applyTtsSelection}
+                  onTtsDraftModelChange={handleTtsDraftModelChange}
+                  onTtsDraftVoiceIdChange={setTtsDraftVoiceId}
+                  onTtsVoiceProviderFilterChange={setTtsVoiceProviderFilter}
+                />
               </div>
             </div>
 
@@ -2510,209 +2100,6 @@ export function AgentConfigEditor({
               </div>
             )}
 
-            {ttsPickerOpen ? (
-              <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-8 backdrop-blur-sm"
-                role="dialog"
-                aria-modal="true"
-                aria-label="Set TTS Model and Voice ID"
-                onMouseDown={(event) => {
-                  if (event.target === event.currentTarget) setTtsPickerOpen(false);
-                }}
-              >
-                <div className="flex h-[86vh] w-full max-w-6xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[radial-gradient(1200px_circle_at_70%_0%,rgba(248,248,248,0.07)_0%,rgba(56,66,218,0.22)_35%,rgba(12,14,55,0.9)_62%,rgba(0,0,0,1)_100%)] text-white shadow-[0_50px_160px_rgba(0,0,0,0.55)]">
-                  <div className="flex items-start justify-between gap-6 border-b border-white/10 px-7 py-5">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-white/50">
-                        Select Voice
-                      </p>
-                      <h2 className="mt-2 text-2xl font-semibold">Pick model and voice</h2>
-                    </div>
-                    <button
-                      type="button"
-                      className="rounded-full p-2 text-white/60 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                      onClick={() => setTtsPickerOpen(false)}
-                      aria-label="Close"
-                    >
-                      <span className="text-xl leading-none">×</span>
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 border-b border-white/10 px-7 py-5">
-                    <div className="grid gap-3">
-                      <label className="grid gap-2">
-                        <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                          TTS Model
-                        </span>
-                        <select
-                          value={ttsDraftModel}
-                          onChange={(e) => {
-                            const nextModel = e.target.value;
-                            const nextProvider =
-                              initialConfig?.ttsModels?.find((model) => model?.modelId === nextModel)?.provider ?? '';
-                            const currentVoiceProvider = inferVoiceProviderFromVoiceId(ttsDraftVoiceId);
-                            setTtsDraftModel(nextModel);
-                            if (
-                              nextProvider &&
-                              currentVoiceProvider &&
-                              nextProvider.toLowerCase() !== currentVoiceProvider.toLowerCase()
-                            ) {
-                              setTtsDraftVoiceId(defaultVoiceIdForProvider(nextProvider));
-                            }
-                            if (nextProvider.trim().length > 0) {
-                              setTtsVoiceProviderFilter(nextProvider.trim().toLowerCase());
-                            }
-                          }}
-                          className="h-11 rounded-2xl border border-white/10 bg-black/30 px-4 text-sm text-white/90 outline-none transition focus:border-white/25"
-                        >
-                          <option value="" className="bg-black text-white">
-                            Select model
-                          </option>
-                          {ttsModelOptions.map((opt) => (
-                            <option key={`tts-picker-model-${opt.value}`} value={opt.value} className="bg-black text-white">
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {ttsVoiceProviderTabs.map((provider) => {
-                        const label = provider === 'all' ? 'All' : provider.charAt(0).toUpperCase() + provider.slice(1);
-                        const isActive = ttsVoiceProviderFilter === provider;
-                        return (
-                          <button
-                            key={`tts-provider-${provider}`}
-                            type="button"
-                            onClick={() => setTtsVoiceProviderFilter(provider)}
-                            className={[
-                              'rounded-xl border px-3 py-1.5 text-xs font-semibold transition',
-                              isActive
-                                ? 'border-white/40 bg-white/15 text-white'
-                                : 'border-white/10 bg-black/30 text-white/75 hover:bg-white/10',
-                            ].join(' ')}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="min-h-0 flex-1 overflow-y-auto px-7 py-5">
-                    {recommendedTtsVoices.length > 0 ? (
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
-                          Recommended Voices
-                        </p>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                          {recommendedTtsVoices.map((voice) => {
-                            const isSelected = ttsDraftVoiceId.trim() === voice.voiceId;
-                            return (
-                              <button
-                                key={`tts-rec-${voice.voiceId}`}
-                                type="button"
-                                onClick={() => setTtsDraftVoiceId(voice.voiceId)}
-                                className={[
-                                  'flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition',
-                                  isSelected
-                                    ? 'border-white/35 bg-white/15'
-                                    : 'border-white/10 bg-black/30 hover:bg-white/10',
-                                ].join(' ')}
-                              >
-                                {voice.avatarUrl ? (
-                                  <img src={voice.avatarUrl} alt={voice.voiceName || voice.voiceId} className="h-10 w-10 rounded-full object-cover" />
-                                ) : (
-                                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-semibold">
-                                    {(voice.voiceName || voice.voiceId).slice(0, 1).toUpperCase()}
-                                  </div>
-                                )}
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-white/95">
-                                    {voice.voiceName || voice.voiceId}
-                                  </p>
-                                  <p className="truncate text-xs text-white/60">{voice.voiceId}</p>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-black/25">
-                      <div className="divide-y divide-white/10">
-                        {filteredTtsVoices.length === 0 ? (
-                          <div className="px-4 py-6 text-sm text-white/60">No voices match current filters.</div>
-                        ) : (
-                          filteredTtsVoices.map((voice) => {
-                            const isSelected = ttsDraftVoiceId.trim() === voice.voiceId;
-                            return (
-                              <button
-                                key={`tts-row-${voice.voiceId}`}
-                                type="button"
-                                onClick={() => setTtsDraftVoiceId(voice.voiceId)}
-                                className={[
-                                  'grid w-full grid-cols-[2fr,2fr,2fr,auto] items-center gap-3 px-4 py-3 text-left transition',
-                                  isSelected ? 'bg-white/10' : 'hover:bg-white/5',
-                                ].join(' ')}
-                              >
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-semibold text-white/90">
-                                    {voice.voiceName || voice.voiceId}
-                                  </p>
-                                  <p className="truncate text-xs text-white/55">{voice.provider || 'unknown provider'}</p>
-                                </div>
-                                <div className="flex flex-wrap gap-1">
-                                  {voice.accent ? (
-                                    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">
-                                      {voice.accent}
-                                    </span>
-                                  ) : null}
-                                  {voice.gender ? (
-                                    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">
-                                      {voice.gender}
-                                    </span>
-                                  ) : null}
-                                  {voice.age ? (
-                                    <span className="rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] text-white/70">
-                                      {voice.age}
-                                    </span>
-                                  ) : null}
-                                </div>
-                                <p className="truncate text-sm text-white/80">{voice.voiceId}</p>
-                                <span className="rounded-lg border border-white/20 bg-white/10 px-2 py-1 text-xs font-semibold text-white/80">
-                                  {isSelected ? 'Selected' : 'Select'}
-                                </span>
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 border-t border-white/10 px-7 py-5 sm:grid-cols-[2fr,auto] sm:items-end">
-                    <div className="flex items-center justify-end gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setTtsPickerOpen(false)}
-                        className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 transition hover:bg-white/10"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={applyTtsSelection}
-                        className="rounded-2xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/15"
-                      >
-                        Save voice
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>

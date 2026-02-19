@@ -1,4 +1,5 @@
 import type { StartSpeaker } from '@/types';
+import { Switch } from '@/components/ui/switch';
 
 const SLIDER_MIN_SECONDS = 0.2;
 const SLIDER_MAX_SECONDS = 19.8;
@@ -57,11 +58,11 @@ export function BeginMessageSettings({
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
             <span className="text-sm font-semibold text-white/90">AI starts speaking after silence</span>
-            <input
-              type="checkbox"
+            <Switch
               checked={isAiAfterSilenceEnabled}
-              onChange={(e) => onBeginMessageDelayChange(e.target.checked ? Math.max(delayMs, DEFAULT_DELAY_MS) : 0)}
-              className="h-4 w-4"
+              onCheckedChange={(checked) =>
+                onBeginMessageDelayChange(checked ? Math.max(delayMs, DEFAULT_DELAY_MS) : 0)
+              }
             />
           </div>
           {isAiAfterSilenceEnabled ? (

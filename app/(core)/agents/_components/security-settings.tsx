@@ -81,41 +81,45 @@ export function SecuritySettings({
 
       <div className="grid gap-4">
         <label className="grid gap-2">
-          <span className="text-base font-semibold text-white/90">Digit Limit</span>
-          <p className="text-xs text-white/65">
-            The AI responds immediately after the caller enters the configured number of digits.
-          </p>
-          <div className="mt-1">
-            <Switch
-              disabled={!allowUserDtmf}
-              checked={isDigitLimitEnabled}
-              onCheckedChange={(checked) => onDigitLimitEnabledChange(Boolean(checked))}
-              aria-label="Enable digit limit"
-            />
-          </div>
-          {isDigitLimitEnabled ? (
-            <div className="mt-2 flex h-14 items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-6">
-              <button
-                type="button"
-                disabled={!allowUserDtmf || (digitLimit ?? 1) <= 1}
-                onClick={() => onDigitLimitChange(Math.max(1, (digitLimit ?? 10) - 1))}
-                className="text-xl leading-none text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Decrease digit limit"
-              >
-                −
-              </button>
-              <span className="text-base font-semibold text-white/95">{digitLimit}</span>
-              <button
-                type="button"
-                disabled={!allowUserDtmf || (digitLimit ?? 50) >= 50}
-                onClick={() => onDigitLimitChange(Math.min(50, (digitLimit ?? 10) + 1))}
-                className="text-xl leading-none text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Increase digit limit"
-              >
-                +
-              </button>
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
+            Digit Limit
+          </span>
+          <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-white/65">
+                The AI responds immediately after the caller enters the configured number of digits.
+              </p>
+              <Switch
+                disabled={!allowUserDtmf}
+                checked={isDigitLimitEnabled}
+                onCheckedChange={(checked) => onDigitLimitEnabledChange(Boolean(checked))}
+                aria-label="Enable digit limit"
+              />
             </div>
-          ) : null}
+            {isDigitLimitEnabled ? (
+              <div className="mt-3 flex h-14 items-center justify-between rounded-2xl border border-white/10 bg-black/30 px-6">
+                <button
+                  type="button"
+                  disabled={!allowUserDtmf || (digitLimit ?? 1) <= 1}
+                  onClick={() => onDigitLimitChange(Math.max(1, (digitLimit ?? 10) - 1))}
+                  className="text-xl leading-none text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Decrease digit limit"
+                >
+                  −
+                </button>
+                <span className="text-base font-semibold text-white/95">{digitLimit}</span>
+                <button
+                  type="button"
+                  disabled={!allowUserDtmf || (digitLimit ?? 50) >= 50}
+                  onClick={() => onDigitLimitChange(Math.min(50, (digitLimit ?? 10) + 1))}
+                  className="text-xl leading-none text-white/70 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Increase digit limit"
+                >
+                  +
+                </button>
+              </div>
+            ) : null}
+          </div>
         </label>
 
         <label className="grid gap-2">

@@ -121,6 +121,7 @@ export interface VoiceAgentDto {
   webhookTimeoutMs?: number;
   maxCallDurationMs?: number;
   ringTimeOutMs?: number;
+  endCallAfterSilenceMs?: number;
   enableVoiceMailDetection?: boolean;
   enableVoicemailDetection?: boolean;
   enable_voicemail_detection?: boolean;

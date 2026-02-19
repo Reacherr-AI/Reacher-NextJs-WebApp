@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Slider } from '@/components/ui/slider';
 
 type SpeechSettingsProps = {
   ambientSound?: string;
@@ -100,14 +101,15 @@ export function SpeechSettings({
             >
               <p className="text-sm font-semibold">Background Sound Volume</p>
               <div className="mt-4 flex items-center gap-4">
-                <input
-                  type="range"
+                <Slider
                   min={0}
                   max={1}
                   step={0.01}
-                  value={selectedAmbientVolume}
-                  onChange={(e) => onAmbientSoundVolumeChange(clamp01(Number(e.target.value)))}
-                  className="w-[80%] accent-white"
+                  value={[selectedAmbientVolume]}
+                  onValueChange={(value) =>
+                    onAmbientSoundVolumeChange(clamp01(value[0] ?? selectedAmbientVolume))
+                  }
+                  className="w-[80%]"
                 />
                 <span className="text-sm font-medium">{selectedAmbientVolume.toFixed(2)}</span>
               </div>
@@ -122,14 +124,15 @@ export function SpeechSettings({
           Control how fast the agent responds after users finish speaking.
         </p>
         <div className="flex items-center gap-4">
-          <input
-            type="range"
+          <Slider
             min={0}
             max={1}
             step={0.01}
-            value={selectedResponsiveness}
-            onChange={(e) => onResponsivenessChange(clamp01(Number(e.target.value)))}
-            className="w-[80%] accent-white"
+            value={[selectedResponsiveness]}
+            onValueChange={(value) =>
+              onResponsivenessChange(clamp01(value[0] ?? selectedResponsiveness))
+            }
+            className="w-[80%]"
           />
           <span className="text-sm font-medium">{selectedResponsiveness.toFixed(2)}</span>
         </div>
@@ -141,14 +144,15 @@ export function SpeechSettings({
           Control how sensitively AI can be interrupted by human speech.
         </p>
         <div className="flex items-center gap-4">
-          <input
-            type="range"
+          <Slider
             min={0}
             max={1}
             step={0.01}
-            value={selectedInterruptionSensitivity}
-            onChange={(e) => onInterruptionSensitivityChange(clamp01(Number(e.target.value)))}
-            className="w-[80%] accent-white"
+            value={[selectedInterruptionSensitivity]}
+            onValueChange={(value) =>
+              onInterruptionSensitivityChange(clamp01(value[0] ?? selectedInterruptionSensitivity))
+            }
+            className="w-[80%]"
           />
           <span className="text-sm font-medium">{selectedInterruptionSensitivity.toFixed(2)}</span>
         </div>
