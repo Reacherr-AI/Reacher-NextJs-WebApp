@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { Separator } from '@/components/ui/separator';
 
 
 type PhoneNumberItem = {
@@ -280,17 +281,9 @@ export default function AgentPublishButton() {
                             />
                         </div>
 
-                        <div className="flex items-center justify-between gap-3 text-sm text-white/60">
-                            <p>Pro tip: You can compare changes using Version Difference.</p>
-                            <button
-                                type="button"
-                                className="rounded-xl border border-white/20 bg-black/30 px-4 py-1.5 text-sm font-semibold text-white/90 transition hover:bg-white/10"
-                            >
-                                Compare
-                            </button>
-                        </div>
+                        <Separator />
 
-                        <div className="space-y-5 border-t border-white/10 pt-3">
+                        <div className="space-y-5">
                             <div>
                                 <p className="text-base font-semibold text-white/90">Select Phone Number</p>
                                 <p className="text-sm text-white/55">Phone number is optional. You can proceed without it.</p>

@@ -105,6 +105,9 @@ export interface VoiceAgentDto {
   isPublished?: boolean;
   voiceId?: string;
   voiceModel?: string;
+  voiceTemperature?: number;
+  voiceSpeed?: number;
+  volume?: number;
   responsiveness?: number;
   interruptionSensitivity?: number;
   reminderTriggerTimeoutMs?: number;
@@ -236,7 +239,9 @@ export interface Mcp {
   name?: string;
   url?: string;
   headers?: Record<string, string>;
+  queryParams?: Record<string, unknown>;
   query_params?: Record<string, unknown>;
+  timeoutMs?: number;
   timeout_ms?: number;
 }
 

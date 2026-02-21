@@ -16,6 +16,7 @@ import {
 import { WebhookSettings } from './webhook-settings';
 import { PostCallSettings, type PostCallDraft } from './post-call-settings';
 import { TtsModelSettings } from './tts-model-settings';
+import { LlmMcpsSettings } from './llm-mcps-settings';
 import {
   conversationConfigStoredResults,
   getLLMProviders,
@@ -127,6 +128,31 @@ const DTMF_TIMEOUT_MAX_MS = 10000;
 const DTMF_TIMEOUT_DEFAULT_MS = 5500;
 const DTMF_TIMEOUT_STEP_MS = 100;
 const DTMF_TERMINATION_KEYS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '#', '*'] as const;
+const VOICE_SPEED_MIN = 0.5;
+const VOICE_SPEED_MAX = 2;
+const VOICE_SPEED_DEFAULT = 1;
+const VOICE_TEMPERATURE_MIN = 0;
+const VOICE_TEMPERATURE_MAX = 2;
+const VOICE_TEMPERATURE_DEFAULT = 1;
+const VOICE_VOLUME_MIN = 0;
+const VOICE_VOLUME_MAX = 2;
+const VOICE_VOLUME_DEFAULT = 1;
+
+const clampRange = (value: number, min: number, max: number): number =>
+  Math.max(min, Math.min(max, value));
+
+const normalizeVoiceSpeed = (value: unknown): number =>
+  clampRange(typeof value === 'number' ? value : VOICE_SPEED_DEFAULT, VOICE_SPEED_MIN, VOICE_SPEED_MAX);
+
+const normalizeVoiceTemperature = (value: unknown): number =>
+  clampRange(
+    typeof value === 'number' ? value : VOICE_TEMPERATURE_DEFAULT,
+    VOICE_TEMPERATURE_MIN,
+    VOICE_TEMPERATURE_MAX
+  );
+
+const normalizeVoiceVolume = (value: unknown): number =>
+  clampRange(typeof value === 'number' ? value : VOICE_VOLUME_DEFAULT, VOICE_VOLUME_MIN, VOICE_VOLUME_MAX);
 
 const resolveDefaultLlmModelValue = (options: Array<{ label: string; value: string }>): string => {
   const exact =
@@ -639,7 +665,7 @@ const SECTIONS: {
     { id: 'postcall', label: 'Post-Call Extraction', group: 'agent' },
     { id: 'llm_kb', label: 'Knowledge Base', group: 'llm' },
     { id: 'llm_tools', label: 'Functions', group: 'llm' },
-    { id: 'llm_mcps', label: 'LLM: MCPs', group: 'llm', disabled: true },
+    { id: 'llm_mcps', label: 'LLM: MCPs', group: 'llm' },
     { id: 'raw', label: 'Raw JSON', group: 'advanced' },
   ];
 
@@ -736,6 +762,9 @@ export function AgentConfigEditor({
   const [editingPostCallIndex, setEditingPostCallIndex] = React.useState<number | null>(null);
   const [ttsDraftModel, setTtsDraftModel] = React.useState('');
   const [ttsDraftVoiceId, setTtsDraftVoiceId] = React.useState('');
+  const [ttsDraftVoiceSpeed, setTtsDraftVoiceSpeed] = React.useState(VOICE_SPEED_DEFAULT);
+  const [ttsDraftVoiceTemperature, setTtsDraftVoiceTemperature] = React.useState(VOICE_TEMPERATURE_DEFAULT);
+  const [ttsDraftVolume, setTtsDraftVolume] = React.useState(VOICE_VOLUME_DEFAULT);
   const [ttsVoiceProviderFilter, setTtsVoiceProviderFilter] = React.useState('all');
   const [postCallDraft, setPostCallDraft] = React.useState<PostCallDraft>({
     type: 'string',
@@ -1283,6 +1312,9 @@ export function AgentConfigEditor({
       ...prev,
       voiceModel: model,
       voiceId: voiceId || undefined,
+      voiceSpeed: normalizeVoiceSpeed(ttsDraftVoiceSpeed),
+      voiceTemperature: normalizeVoiceTemperature(ttsDraftVoiceTemperature),
+      volume: normalizeVoiceVolume(ttsDraftVolume),
     }));
     setError(null);
     setTtsPickerOpen(false);
@@ -1290,6 +1322,9 @@ export function AgentConfigEditor({
   const openTtsPicker = () => {
     setTtsDraftModel(selectedTtsModel ?? '');
     setTtsDraftVoiceId(agentDraft.voiceId ?? '');
+    setTtsDraftVoiceSpeed(normalizeVoiceSpeed(agentDraft.voiceSpeed));
+    setTtsDraftVoiceTemperature(normalizeVoiceTemperature(agentDraft.voiceTemperature));
+    setTtsDraftVolume(normalizeVoiceVolume(agentDraft.volume));
     setTtsVoiceProviderFilter(
       inferVoiceProviderFromModel(selectedTtsModel).trim().toLowerCase() || 'all'
     );
@@ -1444,7 +1479,7 @@ export function AgentConfigEditor({
   };
 
   return (
-    <div className="h-[90vh] w-full">
+    <div className="w-full">
       <div className="h-full mx-auto grid w-full p-1 max-w-none gap-1 text-white lg:grid-cols-12">
         <div className="order-3 lg:col-span-3">
           <div className="h-full rounded-md border border-white/10 bg-[radial-gradient(900px_circle_at_15%_12%,rgba(255,255,255,0.08)_0%,rgba(56,66,218,0.25)_36%,rgba(0,0,0,0.95)_72%,rgba(0,0,0,1)_100%)] p-6 shadow-[0_34px_120px_rgba(0,0,0,0.45)] sm:p-8">
@@ -1869,9 +1904,15 @@ export function AgentConfigEditor({
                     onSave={saveLlm}
                   />
                 ) : active === 'llm_mcps' ? (
-                  <div className="rounded-2xl border border-white/10 bg-black/30 px-5 py-4 text-sm text-white/60">
-                    MCP configuration is coming soon.
-                  </div>
+                  <LlmMcpsSettings
+                    mcps={(llmDraft.mcps ?? []) as NonNullable<ReacherrLlmDto['mcps']>}
+                    saving={saving === 'llm'}
+                    dirty={llmDirty}
+                    onMcpsChange={(nextMcps) =>
+                      setLlmDraft((prev) => (prev ? { ...prev, mcps: nextMcps } : prev))
+                    }
+                    onSave={saveLlm}
+                  />
                 ) : null
               ) : null}
 
@@ -1924,40 +1965,44 @@ export function AgentConfigEditor({
 
         <div className="order-2 lg:col-span-3">
           <div className="h-full rounded-md border border-white/10 bg-white/5 shadow-[0_30px_90px_rgba(0,0,0,0.35)] backdrop-blur">
-            <div className="divide-y divide-white/10">
+            <div className="flex flex-col gap-2 p-2">
               {SECTIONS.filter((s) => {
                 if (s.group === 'llm') return llmSectionsEnabled;
                 return true;
               }).map((s) => {
                 const isActive = active === s.id;
                 return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setActive(s.id)}
-                    disabled={Boolean(s.disabled)}
-                    className={[
-                      'flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
-                      isActive ? 'bg-white/10' : 'hover:bg-white/5',
-                      s.disabled ? 'cursor-not-allowed opacity-60 hover:bg-black/20' : '',
-                    ].join(' ')}
-                  >
-                    <span className="shrink-0">{sectionIcon(s.id)}</span>
-                    <span className="flex-1 font-semibold text-white/85">{s.label}</span>
-                    {s.disabled ? (
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
-                        coming soon
-                      </span>
-                    ) : null}
-                    <ChevronRight
+                  <>
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setActive(s.id)}
+                      disabled={Boolean(s.disabled)}
                       className={[
-                        'size-4 shrink-0 transition',
-                        isActive ? 'text-white/70' : 'text-white/35',
+                        'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+                        isActive ? 'bg-white/10' : 'hover:bg-white/5',
+                        s.disabled ? 'cursor-not-allowed opacity-60 hover:bg-black/20' : '',
                       ].join(' ')}
-                      aria-hidden
-                    />
-                  </button>
+                    >
+                      <span className="shrink-0">{sectionIcon(s.id)}</span>
+                      <span className="flex-1 font-semibold text-white/85">{s.label}</span>
+                      {s.disabled ? (
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/45">
+                          coming soon
+                        </span>
+                      ) : null}
+                      <ChevronRight
+                        className={[
+                          'size-4 shrink-0 transition',
+                          isActive ? 'text-white/70' : 'text-white/35',
+                        ].join(' ')}
+                        aria-hidden
+                      />
+                    </button>
+
+                    <div className='mx-auto w-[90%] bg-white/10 h-[0.5px]'></div>
+                  </>
                 );
               })}
             </div>
@@ -2036,6 +2081,9 @@ export function AgentConfigEditor({
                   ttsPickerOpen={ttsPickerOpen}
                   ttsDraftModel={ttsDraftModel}
                   ttsDraftVoiceId={ttsDraftVoiceId}
+                  ttsDraftVolume={ttsDraftVolume}
+                  voiceSpeed={normalizeVoiceSpeed(agentDraft.voiceSpeed)}
+                  voiceTemperature={normalizeVoiceTemperature(agentDraft.voiceTemperature)}
                   ttsVoiceProviderFilter={ttsVoiceProviderFilter}
                   ttsModelOptions={ttsModelOptions}
                   ttsVoiceProviderTabs={ttsVoiceProviderTabs}
@@ -2048,6 +2096,21 @@ export function AgentConfigEditor({
                   onTtsDraftModelChange={handleTtsDraftModelChange}
                   onTtsDraftVoiceIdChange={setTtsDraftVoiceId}
                   onTtsVoiceProviderFilterChange={setTtsVoiceProviderFilter}
+                  onVoiceSettingsSave={({ voiceSpeed, voiceTemperature, volume }) => {
+                    const nextSpeed = normalizeVoiceSpeed(voiceSpeed);
+                    const nextTemperature = normalizeVoiceTemperature(voiceTemperature);
+                    const nextVolume = normalizeVoiceVolume(volume);
+                    setAgentDraft((prev) => ({
+                      ...prev,
+                      voiceSpeed: nextSpeed,
+                      voiceTemperature: nextTemperature,
+                      volume: nextVolume,
+                    }));
+                    setTtsDraftVoiceSpeed(nextSpeed);
+                    setTtsDraftVoiceTemperature(nextTemperature);
+                    setTtsDraftVolume(nextVolume);
+                  }}
+                  settingsDisabled={saving !== 'idle'}
                 />
               </div>
             </div>

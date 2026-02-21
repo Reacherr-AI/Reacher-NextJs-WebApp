@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { TtsVoiceSettings } from './tts-voice-settings';
 
 export type TtsVoiceOption = {
   voiceId: string;
@@ -26,6 +27,9 @@ type TtsModelSettingsProps = {
   ttsPickerOpen: boolean;
   ttsDraftModel: string;
   ttsDraftVoiceId: string;
+  ttsDraftVolume: number;
+  voiceSpeed: number;
+  voiceTemperature: number;
   ttsVoiceProviderFilter: string;
   ttsModelOptions: TtsModelOption[];
   ttsVoiceProviderTabs: string[];
@@ -38,6 +42,8 @@ type TtsModelSettingsProps = {
   onTtsDraftModelChange: (value: string) => void;
   onTtsDraftVoiceIdChange: (value: string) => void;
   onTtsVoiceProviderFilterChange: (value: string) => void;
+  onVoiceSettingsSave: (next: { voiceSpeed: number; voiceTemperature: number; volume: number }) => Promise<void> | void;
+  settingsDisabled?: boolean;
 };
 
 export function TtsModelSettings({
@@ -47,6 +53,9 @@ export function TtsModelSettings({
   ttsPickerOpen,
   ttsDraftModel,
   ttsDraftVoiceId,
+  ttsDraftVolume,
+  voiceSpeed,
+  voiceTemperature,
   ttsVoiceProviderFilter,
   ttsModelOptions,
   ttsVoiceProviderTabs,
@@ -59,6 +68,8 @@ export function TtsModelSettings({
   onTtsDraftModelChange,
   onTtsDraftVoiceIdChange,
   onTtsVoiceProviderFilterChange,
+  onVoiceSettingsSave,
+  settingsDisabled = false,
 }: TtsModelSettingsProps) {
   return (
     <>
@@ -66,21 +77,22 @@ export function TtsModelSettings({
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-white/45">
           TTS Model
         </p>
-        <div
-          className="mt-2 cursor-pointer rounded-2xl border border-white/10 bg-black/30 px-3 py-2 transition hover:border-white/20 hover:bg-white/5"
-          role="button"
-          tabIndex={0}
-          onClick={onOpenPicker}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              onOpenPicker();
-            }
-          }}
-          aria-label="Open TTS model and voice selection"
-        >
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex items-center gap-3">
+        <div className="mt-2 flex items-center gap-2">
+          <div
+            className="min-w-0 flex-1 cursor-pointer rounded-2xl border border-white/10 bg-black/30 px-3 py-2 transition hover:border-white/20 hover:bg-white/5"
+            role="button"
+            tabIndex={0}
+            onClick={onOpenPicker}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onOpenPicker();
+              }
+            }}
+            aria-label="Open TTS model and voice selection"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex items-center gap-3">
 
               {/* REAL */}
               {/* {selectedTtsVoice?.avatarUrl ? (
@@ -99,16 +111,24 @@ export function TtsModelSettings({
                 {(selectedTtsVoice?.voiceName || selectedVoiceId || 'V').slice(0, 1).toUpperCase()}
               </div>
 
-              <div className="min-w-0">
-                <p className="truncate text-sm text-white/90">
-                  {selectedTtsVoice?.voiceName || selectedVoiceId || 'No voice selected'}
-                </p>
-                <p className="truncate text-xs text-white/55">
-                  {selectedTtsVoice?.provider || selectedTtsModel || 'Select a voice'}
-                </p>
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-white/90">
+                    {selectedTtsVoice?.voiceName || selectedVoiceId || 'No voice selected'}
+                  </p>
+                  <p className="truncate text-xs text-white/55">
+                    {selectedTtsVoice?.provider || selectedTtsModel || 'Select a voice'}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+          <TtsVoiceSettings
+            voiceSpeed={voiceSpeed}
+            voiceTemperature={voiceTemperature}
+            volume={ttsDraftVolume}
+            disabled={settingsDisabled}
+            onSave={onVoiceSettingsSave}
+          />
         </div>
       </div>
 
