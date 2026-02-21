@@ -5,7 +5,6 @@ import {
   PiiMode,
   S2SModel,
   StartSpeaker,
-  VoicemailActionType,
 } from './enums';
 import { PostCallField } from './analysis';
 
@@ -59,37 +58,6 @@ export interface Action {
   type: string;
 }
 
-export interface HungupVoiceMailAction extends Action {
-  type: VoicemailActionType;
-}
-
-export interface PromptVoicemailAction extends Action {
-  type: VoicemailActionType;
-  prompt?: string;
-}
-
-export interface StaticTextVoicemailAction extends Action {
-  type: VoicemailActionType;
-  text?: string;
-}
-
-export interface VoiceMailOption {
-  voiceMailOptionType: VoicemailActionType;
-  text?: string;
-}
-
-export interface LegacyVoicemailOption {
-  action?: HungupVoiceMailAction | PromptVoicemailAction | StaticTextVoicemailAction;
-}
-
-export interface SnakeCaseVoicemailOption {
-  action?: {
-    type?: VoicemailActionType;
-    text?: string;
-    prompt?: string;
-  };
-}
-
 export interface IvrOption {
   action: {
     type: 'hangup';
@@ -125,15 +93,6 @@ export interface VoiceAgentDto {
   maxCallDurationMs?: number;
   ringTimeOutMs?: number;
   endCallAfterSilenceMs?: number;
-  enableVoiceMailDetection?: boolean;
-  enableVoicemailDetection?: boolean;
-  enable_voicemail_detection?: boolean;
-  voiceMailDetectionTimeOutMs?: number;
-  voiceMailMessage?: string;
-  voiceMailDetection?: LegacyVoicemailOption;
-  voicemailOption?: VoiceMailOption;
-  voiceMailOption?: VoiceMailOption;
-  voicemail_option?: SnakeCaseVoicemailOption | null;
   ivrOption?: IvrOption | null;
   ivr_option?: IvrOption | null;
   analysisSuccessfulPrompt?: string;

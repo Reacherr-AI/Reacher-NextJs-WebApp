@@ -117,7 +117,7 @@ export function AgentsInfiniteList({
   }, [loadMore, nextPage]);
 
   return (
-    <>
+    <div className="grid gap-8 lg:grid-cols-2">
       {agents.map((agent, index) => (
         <div
           key={agent.agentId ?? `${agent.agentName ?? 'agent'}-${index}`}
@@ -134,19 +134,11 @@ export function AgentsInfiniteList({
               </h2>
             </div>
             <div className="flex flex-col gap-2 text-sm text-white/70">
-              <span>Version: {agent.agentVersion ?? '—'}</span>
               <span>Last Updated: {formatTimestamp(agent.lastUpdatedAt)}</span>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-              <p className="text-xs uppercase tracking-[0.2em] text-white/50">Response Engine</p>
-              <p className="mt-2 text-sm text-white/80">
-                Type: {agent.responseEngineRefDto?.type ?? '—'}
-              </p>
-            </div>
-
+          <div className="mt-6 grid gap-6 sm:grid-cols-1">
             <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-white/50">Phone Numbers</p>
               {agent.phoneNumbers?.length ? (
@@ -190,7 +182,7 @@ export function AgentsInfiniteList({
       {reachedEnd && agents.length > 0 ? (
         <div className="py-6 text-center text-sm text-white/50">You have reached the end.</div>
       ) : null}
-    </>
+    </div>
   );
 }
 

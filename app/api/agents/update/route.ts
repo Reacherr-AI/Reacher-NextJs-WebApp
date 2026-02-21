@@ -10,18 +10,6 @@ const isUuid = (value: unknown): value is string =>
   typeof value === 'string' &&
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
-const sanitizeVoiceMailOption = (value: unknown): unknown => {
-  if (!isRecord(value)) return value;
-  const out: Record<string, unknown> = {};
-  if (typeof value.voiceMailOptionType === 'string') {
-    out.voiceMailOptionType = value.voiceMailOptionType;
-  }
-  if (typeof value.text === 'string') {
-    out.text = value.text;
-  }
-  return out;
-};
-
 const tryParseJson = (value: string): unknown => {
   try {
     return JSON.parse(value);
@@ -96,12 +84,6 @@ const normalizePostCallAnalysisData = (value: unknown): unknown => {
 const sanitizeUpdatePayload = (value: unknown): unknown => {
   if (!isRecord(value)) return value;
   const payload = { ...value };
-  if ('voiceMailOption' in payload) {
-    payload.voiceMailOption = sanitizeVoiceMailOption(payload.voiceMailOption);
-  }
-  if ('voicemailOption' in payload) {
-    payload.voicemailOption = sanitizeVoiceMailOption(payload.voicemailOption);
-  }
   if ('postCallAnalysisData' in payload) {
     payload.postCallAnalysisData = normalizePostCallAnalysisData(payload.postCallAnalysisData);
   }

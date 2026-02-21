@@ -12,8 +12,6 @@ export type CallType = 'WEB_CALL' | 'PHONE_CALL';
 
 export type CallStatus = 'REGISTERED' | 'ONGOING' | 'ENDED' | 'ERROR';
 
-export type VoicemailActionType = 'static_text' | 'prompt' | 'hangup';
-
 export type PiiMode = 'post_call' | 'POST_CALL';
 
 export type PiiCategory =

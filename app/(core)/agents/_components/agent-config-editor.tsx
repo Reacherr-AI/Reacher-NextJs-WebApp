@@ -8,7 +8,6 @@ import { LlmToolsSettings } from './llm-tools-settings';
 import { SecuritySettings } from './security-settings';
 import { LlmTemperatureSettings } from './llm-temperature-settings';
 import { SpeechSettings } from './speech-settings';
-import { VoicemailSettings } from './voicemail-settings';
 import {
   CallTimingSettings,
   normalizeCallTimingMs,
@@ -17,6 +16,8 @@ import { WebhookSettings } from './webhook-settings';
 import { PostCallSettings, type PostCallDraft } from './post-call-settings';
 import { TtsModelSettings } from './tts-model-settings';
 import { LlmMcpsSettings } from './llm-mcps-settings';
+import { IvrSettings } from './ivr-settings';
+import { DynamicVariablesSettings } from './dynamic-variables-settings';
 import {
   conversationConfigStoredResults,
   getLLMProviders,
@@ -37,10 +38,6 @@ import {
   Webhook,
   Wrench,
 } from 'lucide-react';
-
-type VoiceMailActionType = NonNullable<
-  NonNullable<VoiceAgentDto['voiceMailOption']>['voiceMailOptionType']
->;
 
 type PiiModeType = NonNullable<NonNullable<VoiceAgentDto['piiConfig']>['mode']>;
 
@@ -298,21 +295,6 @@ const validateUserDtmfOption = (
   return null;
 };
 
-const validateVoicemailOption = (
-  enabled: boolean | undefined,
-  option: VoiceAgentDto['voiceMailOption']
-): string | null => {
-  if (!enabled) return null;
-  const type = option?.voiceMailOptionType;
-  if (!type || (type !== 'hangup' && type !== 'prompt' && type !== 'static_text')) {
-    return 'Voicemail Action Type is required when voicemail detection is enabled.';
-  }
-  if ((type === 'prompt' || type === 'static_text') && !option?.text?.trim()) {
-    return 'Voicemail Text is required for prompt/static_text actions.';
-  }
-  return null;
-};
-
 const isVoiceLanguageMismatchError = (message: string): boolean => {
   const normalized = message.toLowerCase();
   return normalized.includes('only supports') && normalized.includes('cannot be used for');
@@ -352,114 +334,31 @@ const normalizeAgentSaveErrorMessage = (message: string): string => {
   return message;
 };
 
-const sanitizeVoiceMailOption = (value: unknown): VoiceAgentDto['voiceMailOption'] => {
-  if (!isRecord(value)) return undefined;
-  const rawType = value.voiceMailOptionType;
-  const voiceMailOptionType =
-    rawType === 'hangup' || rawType === 'prompt' || rawType === 'static_text' ? rawType : undefined;
-  if (!voiceMailOptionType) return undefined;
-  const text = typeof value.text === 'string' ? value.text.trim() : undefined;
-  return voiceMailOptionType === 'hangup'
-    ? { voiceMailOptionType: 'hangup' }
-    : {
-      voiceMailOptionType,
-      ...(text ? { text } : {}),
-    };
-};
-
-const sanitizeVoiceMailOptionFromAction = (value: unknown): VoiceAgentDto['voiceMailOption'] => {
-  if (!isRecord(value)) return undefined;
-  const rawType = value.type;
-  const voiceMailOptionType =
-    rawType === 'hangup' || rawType === 'prompt' || rawType === 'static_text' ? rawType : undefined;
-  if (!voiceMailOptionType) return undefined;
-  const text =
-    typeof value.text === 'string'
-      ? value.text.trim()
-      : typeof value.prompt === 'string'
-        ? value.prompt.trim()
-        : undefined;
-  return voiceMailOptionType === 'hangup'
-    ? { voiceMailOptionType: 'hangup' }
-    : {
-      voiceMailOptionType,
-      ...(text ? { text } : {}),
-    };
-};
-
 const sanitizeIvrOption = (value: unknown): VoiceAgentDto['ivrOption'] => {
   if (!isRecord(value) || !isRecord(value.action)) return undefined;
   if (value.action.type !== 'hangup') return undefined;
   return { action: { type: 'hangup' } };
 };
 
-const normalizeVoicemailOption = (agent: VoiceAgentDto): VoiceAgentDto => {
-  const legacyAgent = agent as VoiceAgentDto & {
-    enableVoiceMailDetection?: boolean;
-    enable_voicemail_detection?: boolean;
-    voicemailOption?: VoiceAgentDto['voiceMailOption'];
-    voicemail_option?: VoiceAgentDto['voicemail_option'];
-    voiceMailDetection?: { action?: { type?: string; text?: string; prompt?: string } };
-    voiceMailMessage?: string;
-  };
-  const legacyAction = legacyAgent
-    .voiceMailDetection?.action;
-  const normalizedEnableVoicemailDetection =
-    typeof agent.enableVoicemailDetection === 'boolean'
-      ? agent.enableVoicemailDetection
-      : typeof legacyAgent.enable_voicemail_detection === 'boolean'
-        ? legacyAgent.enable_voicemail_detection
-        : legacyAgent.enableVoiceMailDetection;
-  const normalizedVoiceMailOption =
-    sanitizeVoiceMailOption(agent.voiceMailOption) ??
-    sanitizeVoiceMailOption(legacyAgent.voicemailOption) ??
-    sanitizeVoiceMailOptionFromAction(legacyAgent.voicemail_option?.action);
-  const legacyText = legacyAction?.text ?? legacyAction?.prompt ?? legacyAgent.voiceMailMessage;
-
-  if (normalizedVoiceMailOption || !legacyAction?.type) {
-    const withNormalizedText = normalizedVoiceMailOption
-      ? {
-        ...normalizedVoiceMailOption,
-        text: normalizedVoiceMailOption.text ?? legacyText,
-      }
-      : normalizedVoiceMailOption;
-    return {
-      ...agent,
-      enableVoicemailDetection: normalizedEnableVoicemailDetection,
-      voiceMailOption: withNormalizedText,
-    };
-  }
-
-  return {
-    ...agent,
-    enableVoicemailDetection: normalizedEnableVoicemailDetection,
-    voiceMailOption: {
-      voiceMailOptionType: legacyAction.type as VoiceMailActionType,
-      text: legacyAction.text ?? legacyAction.prompt,
-    },
-  };
-};
-
 const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
-  const withVoicemail = normalizeVoicemailOption(agent);
-  const restWithVoicemail = { ...withVoicemail };
-  delete restWithVoicemail.ivrOption;
-  const normalizedIvrOption = sanitizeIvrOption(withVoicemail.ivrOption);
-  const languageEnum = withVoicemail.languageEnum ?? withVoicemail.language;
+  const restAgent = { ...agent };
+  delete restAgent.ivrOption;
+  const normalizedIvrOption = sanitizeIvrOption(agent.ivrOption);
+  const languageEnum = agent.languageEnum ?? agent.language;
   const userDtmfOption = normalizeUserDtmfOption(
-    withVoicemail.userDtmfOption ?? withVoicemail.userDtmfOptions
+    agent.userDtmfOption ?? agent.userDtmfOptions
   );
   const normalizedPiiMode =
-    withVoicemail.piiConfig?.mode &&
-      String(withVoicemail.piiConfig.mode).trim().toLowerCase() === 'post_call'
+    agent.piiConfig?.mode &&
+      String(agent.piiConfig.mode).trim().toLowerCase() === 'post_call'
       ? ('POST_CALL' as PiiModeType)
-      : withVoicemail.piiConfig?.mode;
+      : agent.piiConfig?.mode;
   const postCallAnalysisModel =
-    typeof withVoicemail.postCallAnalysisModel === 'string' &&
-      withVoicemail.postCallAnalysisModel.trim().length > 0
-      ? withVoicemail.postCallAnalysisModel.trim()
+    typeof agent.postCallAnalysisModel === 'string' &&
+      agent.postCallAnalysisModel.trim().length > 0
+      ? agent.postCallAnalysisModel.trim()
       : DEFAULT_POST_CALL_ANALYSIS_MODEL;
-  const rawPostCall = withVoicemail.postCallAnalysisData as unknown;
+  const rawPostCall = agent.postCallAnalysisData as unknown;
   const normalizedPostCall = (Array.isArray(rawPostCall)
     ? rawPostCall
     : isRecord(rawPostCall) && Array.isArray(rawPostCall.data)
@@ -467,18 +366,18 @@ const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
       : []) as PostCallField[];
 
   return {
-    ...restWithVoicemail,
+    ...restAgent,
     ivrOption: normalizedIvrOption,
     languageEnum,
     language: languageEnum,
     userDtmfOption,
     userDtmfOptions: userDtmfOption,
-    maxCallDurationMs: normalizeCallTimingMs(withVoicemail.maxCallDurationMs),
-    ringTimeOutMs: normalizeCallTimingMs(withVoicemail.ringTimeOutMs),
-    endCallAfterSilenceMs: normalizeCallTimingMs(withVoicemail.endCallAfterSilenceMs),
-    piiConfig: withVoicemail.piiConfig
+    maxCallDurationMs: normalizeCallTimingMs(agent.maxCallDurationMs),
+    ringTimeOutMs: normalizeCallTimingMs(agent.ringTimeOutMs),
+    endCallAfterSilenceMs: normalizeCallTimingMs(agent.endCallAfterSilenceMs),
+    piiConfig: agent.piiConfig
       ? {
-        ...withVoicemail.piiConfig,
+        ...agent.piiConfig,
         mode: normalizedPiiMode as PiiModeType,
       }
       : undefined,
@@ -488,15 +387,9 @@ const normalizeAgentForEditor = (agent: VoiceAgentDto): VoiceAgentDto => {
 };
 
 const buildAgentPayload = (draft: VoiceAgentDto): VoiceAgentDto => {
-  const payload = normalizeVoicemailOption(draft) as VoiceAgentDto & {
+  const payload = { ...draft } as VoiceAgentDto & {
     userDtmfOptions?: unknown;
     language?: unknown;
-    voiceMailDetection?: unknown;
-    enableVoiceMailDetection?: boolean;
-    enable_voicemail_detection?: boolean;
-    voiceMailMessage?: string;
-    voicemailOption?: VoiceAgentDto['voiceMailOption'];
-    voicemail_option?: VoiceAgentDto['voicemail_option'];
     ivrOption?: VoiceAgentDto['ivrOption'];
     postCallAnalysisData?: unknown;
     postCallAnalysisModel?: unknown;
@@ -525,63 +418,6 @@ const buildAgentPayload = (draft: VoiceAgentDto): VoiceAgentDto => {
     payload.voiceId = undefined;
   }
   (payload as unknown as Record<string, unknown>).ttsConfig = undefined;
-
-  const normalizedEnableVoicemailDetection =
-    typeof payload.enableVoicemailDetection === 'boolean'
-      ? payload.enableVoicemailDetection
-      : payload.enableVoiceMailDetection;
-  if (typeof normalizedEnableVoicemailDetection === 'boolean') {
-    payload.enableVoicemailDetection = normalizedEnableVoicemailDetection;
-    payload.enableVoiceMailDetection = normalizedEnableVoicemailDetection;
-    payload.enable_voicemail_detection = normalizedEnableVoicemailDetection;
-  }
-
-  if (!payload.voiceMailOption && payload.voicemailOption) {
-    payload.voiceMailOption = payload.voicemailOption;
-  }
-  payload.voiceMailOption = sanitizeVoiceMailOption(payload.voiceMailOption);
-
-  const optionType = payload.voiceMailOption?.voiceMailOptionType;
-  const isValidOptionType =
-    optionType === 'hangup' || optionType === 'prompt' || optionType === 'static_text';
-  if (!isValidOptionType) {
-    payload.voiceMailOption = undefined;
-  }
-
-  if (payload.voiceMailOption?.voiceMailOptionType === 'hangup') {
-    payload.voiceMailOption = { voiceMailOptionType: 'hangup' };
-  } else if (payload.voiceMailOption?.text !== undefined) {
-    payload.voiceMailOption = {
-      ...payload.voiceMailOption,
-      text: payload.voiceMailOption.text.trim(),
-    };
-  }
-  if (payload.voiceMailOption?.text !== undefined) {
-    payload.voiceMailMessage = payload.voiceMailOption.text;
-  }
-  if (payload.voiceMailOption) {
-    const actionType = payload.voiceMailOption.voiceMailOptionType;
-    // Keep legacy fields for current backend persistence.
-    payload.voiceMailDetection = {
-      action:
-        actionType === 'prompt'
-          ? { type: actionType, prompt: payload.voiceMailOption.text }
-          : actionType === 'static_text'
-            ? { type: actionType, text: payload.voiceMailOption.text }
-            : { type: 'hangup' },
-    };
-    // Workaround for backend JSON deserialization bug on VoiceMailOption (validCombination field).
-    // Explicitly clear canonical option objects and rely on voiceMailDetection/voiceMailMessage.
-    (payload as unknown as Record<string, unknown>).voiceMailOption = null;
-    (payload as unknown as Record<string, unknown>).voicemailOption = null;
-    (payload as unknown as Record<string, unknown>).voicemail_option = null;
-  } else if (!payload.enableVoicemailDetection) {
-    (payload as unknown as Record<string, unknown>).voiceMailOption = null;
-    (payload as unknown as Record<string, unknown>).voicemailOption = null;
-    (payload as unknown as Record<string, unknown>).voicemail_option = null;
-    payload.voiceMailDetection = undefined;
-    payload.voiceMailMessage = undefined;
-  }
 
   payload.ivrOption = sanitizeIvrOption(payload.ivrOption);
   if (payload.ivrOption?.action.type === 'hangup') {
@@ -834,14 +670,6 @@ export function AgentConfigEditor({
       setError(dtmfError);
       return;
     }
-    const voicemailError = validateVoicemailOption(
-      agentDraft.enableVoicemailDetection,
-      agentDraft.voiceMailOption
-    );
-    if (voicemailError) {
-      setError(voicemailError);
-      return;
-    }
     const ttsProviderError = validateTtsProviderMatch(agentDraft.voiceModel, agentDraft.voiceId);
     if (ttsProviderError) {
       setError(ttsProviderError);
@@ -918,14 +746,6 @@ export function AgentConfigEditor({
     const dtmfError = validateUserDtmfOption(agentDraft.allowUserDtmf, agentDraft.userDtmfOption);
     if (dtmfError) {
       setError(dtmfError);
-      return;
-    }
-    const voicemailError = validateVoicemailOption(
-      agentDraft.enableVoicemailDetection,
-      agentDraft.voiceMailOption
-    );
-    if (voicemailError) {
-      setError(voicemailError);
       return;
     }
     const ttsProviderError = validateTtsProviderMatch(agentDraft.voiceModel, agentDraft.voiceId);
@@ -1533,47 +1353,8 @@ export function AgentConfigEditor({
             <div className="mt-8">
               {active === 'call' ? (
                 <div className="grid gap-8">
-
-                  <VoicemailSettings
-                    enabled={Boolean(agentDraft.enableVoicemailDetection)}
-                    optionType={agentDraft.voiceMailOption?.voiceMailOptionType as VoiceMailActionType | undefined}
-                    text={agentDraft.voiceMailOption?.text ?? ''}
+                  <IvrSettings
                     ivrHangupEnabled={agentDraft.ivrOption?.action?.type === 'hangup'}
-                    saving={saving === 'agent'}
-                    dirty={agentDirty}
-                    onEnabledChange={(enabled) =>
-                      setAgentDraft((prev) => ({
-                        ...prev,
-                        enableVoicemailDetection: enabled,
-                        voiceMailOption: enabled
-                          ? prev.voiceMailOption ?? { voiceMailOptionType: 'hangup' }
-                          : prev.voiceMailOption,
-                      }))
-                    }
-                    onOptionTypeChange={(nextType) =>
-                      setAgentDraft((prev) => ({
-                        ...prev,
-                        voiceMailOption: nextType === 'hangup'
-                          ? { voiceMailOptionType: 'hangup' }
-                          : {
-                            voiceMailOptionType: nextType,
-                            text: prev.voiceMailOption?.text ?? '',
-                          },
-                      }))
-                    }
-                    onTextChange={(nextText) =>
-                      setAgentDraft((prev) => ({
-                        ...prev,
-                        voiceMailOption: {
-                          voiceMailOptionType:
-                            prev.voiceMailOption?.voiceMailOptionType === 'prompt' ||
-                              prev.voiceMailOption?.voiceMailOptionType === 'static_text'
-                              ? prev.voiceMailOption.voiceMailOptionType
-                              : 'static_text',
-                          text: nextText,
-                        },
-                      }))
-                    }
                     onIvrHangupEnabledChange={(enabled) =>
                       setAgentDraft((prev) => {
                         if (enabled) {
@@ -1624,35 +1405,45 @@ export function AgentConfigEditor({
               ) : null}
 
               {active === 'speech' ? (
-                <SpeechSettings
-                  ambientSound={agentDraft.ambientSound}
-                  ambientSoundVolume={agentDraft.ambientSoundVolume}
-                  responsiveness={agentDraft.responsiveness}
-                  interruptionSensitivity={agentDraft.interruptionSensitivity}
-                  reminderTriggerTimeoutMs={agentDraft.reminderTriggerTimeoutMs}
-                  reminderMaxCount={agentDraft.reminderMaxCount}
-                  saving={saving === 'agent'}
-                  dirty={agentDirty}
-                  onAmbientSoundChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, ambientSound: next }))
-                  }
-                  onAmbientSoundVolumeChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, ambientSoundVolume: next }))
-                  }
-                  onResponsivenessChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, responsiveness: next }))
-                  }
-                  onInterruptionSensitivityChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, interruptionSensitivity: next }))
-                  }
-                  onReminderTriggerTimeoutMsChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, reminderTriggerTimeoutMs: next }))
-                  }
-                  onReminderMaxCountChange={(next) =>
-                    setAgentDraft((prev) => ({ ...prev, reminderMaxCount: next }))
-                  }
-                  onSave={saveAgent}
-                />
+                <div className="grid gap-8">
+                  <DynamicVariablesSettings
+                    variables={llmDraft?.defaultDynamicVariables}
+                    disabled={!llmSectionsEnabled || !llmDraft}
+                    onSave={(nextVariables) =>
+                      setLlmDraft((prev) => (prev ? { ...prev, defaultDynamicVariables: nextVariables } : prev))
+                    }
+                  />
+
+                  <SpeechSettings
+                    ambientSound={agentDraft.ambientSound}
+                    ambientSoundVolume={agentDraft.ambientSoundVolume}
+                    responsiveness={agentDraft.responsiveness}
+                    interruptionSensitivity={agentDraft.interruptionSensitivity}
+                    reminderTriggerTimeoutMs={agentDraft.reminderTriggerTimeoutMs}
+                    reminderMaxCount={agentDraft.reminderMaxCount}
+                    saving={saving === 'agent'}
+                    dirty={agentDirty}
+                    onAmbientSoundChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, ambientSound: next }))
+                    }
+                    onAmbientSoundVolumeChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, ambientSoundVolume: next }))
+                    }
+                    onResponsivenessChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, responsiveness: next }))
+                    }
+                    onInterruptionSensitivityChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, interruptionSensitivity: next }))
+                    }
+                    onReminderTriggerTimeoutMsChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, reminderTriggerTimeoutMs: next }))
+                    }
+                    onReminderMaxCountChange={(next) =>
+                      setAgentDraft((prev) => ({ ...prev, reminderMaxCount: next }))
+                    }
+                    onSave={saveAgent}
+                  />
+                </div>
               ) : null}
 
               {active === 'security' ? (
